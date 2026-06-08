@@ -7,7 +7,6 @@ app.use(cors());
 app.use(express.json());
 
 // Database Sementara di Memori Server (Akan ter-reset jika server mati)
-// Untuk produksi nyata, bagian ini bisa diganti dengan MongoDB/MySQL
 let accounts = [];
 let tasks = {}; // Format: { teacher_username: [ tasks ] }
 let checkedTasks = {}; // Format: { student_username: [ task_ids ] }
@@ -79,7 +78,6 @@ app.delete('/api/tasks/:teacherUsername/:id', (req, res) => {
     if (tasks[teacherUsername]) {
         tasks[teacherUsername] = tasks[teacherUsername].filter(t => t.id !== taskId);
     }
-    // Hapus juga status ceklis murid jika ada
     Object.keys(checkedTasks).forEach(student => {
         checkedTasks[student] = checkedTasks[student].filter(tid => tid !== taskId);
     });
@@ -97,7 +95,6 @@ app.post('/api/tasks/verify', (req, res) => {
         if (!checkedTasks[studentUsername]) checkedTasks[studentUsername] = [];
         if (!checkedTasks[studentUsername].includes(taskId)) checkedTasks[studentUsername].push(taskId);
 
-        // Regenerate Token Baru agar tidak bisa dipakai murid lain
         const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         let newPassword = "";
         for (let i = 0; i < 6; i++) newPassword += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -110,5 +107,5 @@ app.post('/api/tasks/verify', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server berjalan di http://localhost:${PORT}`);
+    console.log(`Server Tugasku berjalan di http://localhost:${PORT}`);
 });
