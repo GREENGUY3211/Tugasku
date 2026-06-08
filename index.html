@@ -8,6 +8,112 @@
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+<!-- ================= FIREBASE SDK ================= -->
+<script type="module">
+  // ============================================================
+  // KONFIGURASI FIREBASE
+  // Ganti nilai di bawah ini dengan konfigurasi project Firebase Anda
+  // Dapatkan dari: Firebase Console > Project Settings > Your Apps
+  // ============================================================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "GANTI_DENGAN_API_KEY_ANDA",
+    authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
+    projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
+    storageBucket: "GANTI_DENGAN_STORAGE_BUCKET_ANDA",
+    messagingSenderId: "GANTI_DENGAN_MESSAGING_SENDER_ID_ANDA",
+    appId: "GANTI_DENGAN_APP_ID_ANDA"
+  };
+
+  // Inisialisasi Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  // Expose ke window agar bisa diakses fungsi JS global di bawah
+  window._fb = { auth, db, storage, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, deleteDoc, serverTimestamp, ref, uploadString, getDownloadURL, deleteObject };
+
+  // ================= LISTENER REALTIME TASKS =================
+  // Akan diaktifkan setelah login
+  window._tasksUnsubscribe = null;
+
+  window._listenTasks = function() {
+    if (window._tasksUnsubscribe) window._tasksUnsubscribe();
+    const { db, collection, onSnapshot } = window._fb;
+    const q = collection(db, "tasks");
+    window._tasksUnsubscribe = onSnapshot(q, (snapshot) => {
+      tasks = {};
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const teacher = data.teacher;
+        if (!tasks[teacher]) tasks[teacher] = [];
+        tasks[teacher].push({ ...data, id: docSnap.id });
+      });
+      if (currentUser) loadTasks();
+    });
+  };
+
+  // ================= LISTENER REALTIME CHECKED TASKS =================
+  window._checkedUnsubscribe = null;
+
+  window._listenCheckedTasks = function(username) {
+    if (window._checkedUnsubscribe) window._checkedUnsubscribe();
+    const { db, doc, onSnapshot } = window._fb;
+    const ref = doc(db, "checkedTasks", username);
+    window._checkedUnsubscribe = onSnapshot(ref, (docSnap) => {
+      if (docSnap.exists()) {
+        checkedTasks[username] = docSnap.data().list || [];
+      } else {
+        checkedTasks[username] = [];
+      }
+      if (currentUser) loadTasks();
+    });
+  };
+
+  // Pantau status login dari Firebase Auth
+  onAuthStateChanged(auth, async (firebaseUser) => {
+    if (firebaseUser) {
+      // User sudah login — ambil data profil dari Firestore
+      const { db, doc, getDoc } = window._fb;
+      const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+      if (userDoc.exists()) {
+        currentUser = { uid: firebaseUser.uid, ...userDoc.data() };
+        window._listenTasks();
+        window._listenCheckedTasks(currentUser.username);
+        // Tampilkan dashboard
+        document.getElementById("authBox").style.display = "none";
+        document.getElementById("authBottomNav").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("bottomNav").style.display = "flex";
+        switchTab('profile');
+        document.getElementById("profileName").innerText = currentUser.fullName;
+        document.getElementById("profileUsername").innerText = currentUser.username;
+        document.getElementById("profileEmail").innerText = currentUser.email;
+        if (currentUser.role === "student") {
+          document.getElementById("studentPanel").style.display = "block";
+          document.getElementById("teacherPanel").style.display = "none";
+          document.getElementById("dashboardTitle").innerText = "Dashboard Siswa";
+          document.getElementById("profileRole").innerText = "Siswa";
+          document.getElementById("classRow").style.display = "block";
+          document.getElementById("profileImage").src = currentUser.photoURL || "https://via.placeholder.com/150";
+        } else {
+          document.getElementById("studentPanel").style.display = "none";
+          document.getElementById("teacherPanel").style.display = "block";
+          document.getElementById("dashboardTitle").innerText = "Dashboard Guru";
+          document.getElementById("profileRole").innerText = "Guru";
+          document.getElementById("classRow").style.display = "none";
+          document.getElementById("profileImage").src = currentUser.photoURL || "https://via.placeholder.com/150";
+        }
+      }
+    }
+  });
+</script>
+
 <style>
 *{
   margin:0;
@@ -742,15 +848,9 @@ button:hover{
 
 <script>
 let editId = null;
-let accounts = JSON.parse(localStorage.getItem("accounts")) || [];
 let currentUser = null;
-
-let tasks = JSON.parse(localStorage.getItem("tasks")) || {};
-if (typeof tasks !== "object" || tasks === null) {
-  tasks = {};
-}
-
-let checkedTasks = JSON.parse(localStorage.getItem("checkedTasks")) || {};
+let tasks = {};
+let checkedTasks = {};
 
 function generateRandomPassword() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; 
@@ -824,11 +924,11 @@ function switchForm(){
   }
 }
 
-// ================= REGISTER =================
-function register(){
-  const fullName = document.getElementById("fullName").value;
-  const username = document.getElementById("username").value;
-  const email = document.getElementById("email").value;
+// ================= REGISTER (Firebase) =================
+async function register(){
+  const fullName = document.getElementById("fullName").value.trim();
+  const username = document.getElementById("username").value.trim();
+  const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
   const role = document.getElementById("role").value;
@@ -843,109 +943,138 @@ function register(){
     return;
   }
 
-  const exist = accounts.find(acc => acc.username === username || acc.email === email);
-  if(exist){
-    alert("Username atau email sudah digunakan!");
-    return;
+  const btn = document.querySelector("#registerForm button[type='button']");
+  btn.innerText = "Mendaftar...";
+  btn.disabled = true;
+
+  try {
+    const { auth, db, createUserWithEmailAndPassword, doc, setDoc, serverTimestamp } = window._fb;
+
+    // Buat akun di Firebase Auth
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCred.user.uid;
+
+    // Simpan data profil ke Firestore
+    await setDoc(doc(db, "users", uid), {
+      fullName,
+      username,
+      email,
+      role,
+      photoURL: "",
+      createdAt: serverTimestamp()
+    });
+
+    alert("Register berhasil! Silakan login.");
+    switchForm();
+    document.getElementById("loginUser").value = email;
+    document.getElementById("loginPass").value = password;
+  } catch (err) {
+    let msg = "Gagal mendaftar.";
+    if (err.code === "auth/email-already-in-use") msg = "Email sudah digunakan!";
+    else if (err.code === "auth/weak-password") msg = "Password minimal 6 karakter!";
+    else if (err.code === "auth/invalid-email") msg = "Format email tidak valid!";
+    alert(msg);
+  } finally {
+    btn.innerText = "Register";
+    btn.disabled = false;
   }
-
-  const user = { fullName, username, email, password, role };
-  accounts.push(user);
-  localStorage.setItem("accounts", JSON.stringify(accounts));
-
-  alert("Register berhasil! Silakan login.");
-  switchForm();
-
-  document.getElementById("loginUser").value = username;
-  document.getElementById("loginPass").value = password;
 }
 
-// ================= LOGIN =================
-function login(){
-  const loginUser = document.getElementById("loginUser").value;
+// ================= LOGIN (Firebase) =================
+async function login(){
+  const loginUser = document.getElementById("loginUser").value.trim();
   const loginPass = document.getElementById("loginPass").value;
 
-  const foundUser = accounts.find(acc =>
-    (acc.username === loginUser || acc.email === loginUser) && acc.password === loginPass
-  );
-
-  if(!foundUser){
-    alert("Akun tidak ditemukan atau password salah!");
+  if (!loginUser || !loginPass) {
+    alert("Masukkan email/username dan password!");
     return;
   }
 
-  currentUser = foundUser;
-  initTeacherTasks();
+  const btn = document.querySelector("#loginForm button[type='button']");
+  btn.innerText = "Masuk...";
+  btn.disabled = true;
 
-  document.getElementById("authBox").style.display = "none";
-  document.getElementById("authBottomNav").style.display = "none"; // Sembunyikan Navigasi Auth
-  document.getElementById("dashboard").style.display = "block";
-  document.getElementById("bottomNav").style.display = "flex"; // Tampilkan Navigasi Utama Dashboard
+  try {
+    const { auth, db, signInWithEmailAndPassword, doc, getDoc } = window._fb;
 
-  switchTab('profile');
+    // Firebase Auth menggunakan email — login dengan email langsung
+    await signInWithEmailAndPassword(auth, loginUser, loginPass);
+    // onAuthStateChanged di module script akan menangani tampilan dashboard
 
-  document.getElementById("profileName").innerText = foundUser.fullName;
-  document.getElementById("profileUsername").innerText = foundUser.username;
-  document.getElementById("profileEmail").innerText = foundUser.email;
-
-  if(foundUser.role === "student"){
-    document.getElementById("studentPanel").style.display = "block";
-    document.getElementById("teacherPanel").style.display = "none";
-    document.getElementById("dashboardTitle").innerText = "Dashboard Siswa";
-    document.getElementById("profileRole").innerText = "Siswa";
-    document.getElementById("classRow").style.display = "block";
-    
-    const savedPhoto = localStorage.getItem("profileImage_student_" + foundUser.username);
-    document.getElementById("profileImage").src = savedPhoto ? savedPhoto : "https://via.placeholder.com/150";
-  } else {
-    document.getElementById("studentPanel").style.display = "none";
-    document.getElementById("teacherPanel").style.display = "block";
-    document.getElementById("dashboardTitle").innerText = "Dashboard Guru";
-    document.getElementById("profileRole").innerText = "Guru";
-    document.getElementById("classRow").style.display = "none";
-
-    const savedPhoto = localStorage.getItem("profileImage_teacher_" + foundUser.username);
-    document.getElementById("profileImage").src = savedPhoto ? savedPhoto : "https://via.placeholder.com/150";
+  } catch (err) {
+    let msg = "Akun tidak ditemukan atau password salah!";
+    if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") msg = "Password salah!";
+    else if (err.code === "auth/user-not-found") msg = "Akun tidak ditemukan!";
+    else if (err.code === "auth/invalid-email") msg = "Format email tidak valid!";
+    else if (err.code === "auth/too-many-requests") msg = "Terlalu banyak percobaan login. Coba beberapa saat lagi.";
+    alert(msg);
+    btn.innerText = "Login";
+    btn.disabled = false;
   }
-  
-  loadTasks();
 }
 
-// ================= LOGOUT =================
-function logout(){
+// ================= LOGOUT (Firebase) =================
+async function logout(){
+  const { auth, signOut } = window._fb;
+  if (window._tasksUnsubscribe) window._tasksUnsubscribe();
+  if (window._checkedUnsubscribe) window._checkedUnsubscribe();
+  await signOut(auth);
   currentUser = null;
   editId = null;
+  tasks = {};
+  checkedTasks = {};
   document.getElementById("dashboard").style.display = "none";
   document.getElementById("bottomNav").style.display = "none"; 
   document.getElementById("authBox").style.display = "block";
-  document.getElementById("authBottomNav").style.display = "flex"; // Tampilkan kembali Navigasi Auth (karena kembali ke Sign In)
+  document.getElementById("authBottomNav").style.display = "flex";
   document.getElementById("loginUser").value = "";
   document.getElementById("loginPass").value = "";
+  const loginBtn = document.querySelector("#loginForm button[type='button']");
+  if (loginBtn) { loginBtn.innerText = "Login"; loginBtn.disabled = false; }
   resetTeacherForm();
 }
 
-// ================= FOTO PROFILE =================
-document.getElementById("photoInput").addEventListener("change", function(e){
+// ================= FOTO PROFILE (Firebase Storage) =================
+document.getElementById("photoInput").addEventListener("change", async function(e){
   const file = e.target.files[0];
   if(file && currentUser){
     const reader = new FileReader();
-    reader.onload = function(event){
+    reader.onload = async function(event){
       const imageData = event.target.result;
       document.getElementById("profileImage").src = imageData;
-      
-      const storageKey = "profileImage_" + currentUser.role + "_" + currentUser.username;
-      localStorage.setItem(storageKey, imageData);
+
+      try {
+        const { storage, db, ref, uploadString, getDownloadURL, doc, updateDoc } = window._fb;
+        const storageRef = ref(storage, `profilePhotos/${currentUser.uid}`);
+        await uploadString(storageRef, imageData, 'data_url');
+        const downloadURL = await getDownloadURL(storageRef);
+
+        // Update URL foto di Firestore
+        await updateDoc(doc(db, "users", currentUser.uid), { photoURL: downloadURL });
+        currentUser.photoURL = downloadURL;
+        document.getElementById("profileImage").src = downloadURL;
+      } catch(err) {
+        console.error("Gagal upload foto:", err);
+        alert("Gagal menyimpan foto ke server. Foto hanya tampil sementara.");
+      }
     };
     reader.readAsDataURL(file);
   }
 });
 
-function removePhoto() {
+async function removePhoto() {
   if (currentUser) {
     document.getElementById("profileImage").src = "https://via.placeholder.com/150";
-    const storageKey = "profileImage_" + currentUser.role + "_" + currentUser.username;
-    localStorage.removeItem(storageKey);
     document.getElementById("photoInput").value = "";
+    try {
+      const { storage, db, ref, deleteObject, doc, updateDoc } = window._fb;
+      const storageRef = ref(storage, `profilePhotos/${currentUser.uid}`);
+      try { await deleteObject(storageRef); } catch(_) { /* File mungkin tidak ada */ }
+      await updateDoc(doc(db, "users", currentUser.uid), { photoURL: "" });
+      currentUser.photoURL = "";
+    } catch(err) {
+      console.error("Gagal hapus foto:", err);
+    }
   }
 }
 
@@ -954,8 +1083,8 @@ function toggleSubject(id){
   taskContainer.style.display = (taskContainer.style.display === "block") ? "none" : "block";
 }
 
-// ================= VERIFIKASI PASSWORD TUGAS =================
-function verifyTaskPassword(taskId, teacherUsername) {
+// ================= VERIFIKASI PASSWORD TUGAS (Firebase) =================
+async function verifyTaskPassword(taskId, teacherUsername) {
   if (!currentUser || currentUser.role !== "student") return;
 
   const inputElem = document.getElementById(`pass-input-${taskId}`);
@@ -978,27 +1107,39 @@ function verifyTaskPassword(taskId, teacherUsername) {
 
   if (targetTask.currentPassword === enteredPassword) {
     const studentKey = currentUser.username;
-    if (!checkedTasks[studentKey]) {
-      checkedTasks[studentKey] = [];
-    }
-    
-    if (!checkedTasks[studentKey].includes(taskId)) {
-      checkedTasks[studentKey].push(taskId);
-    }
-    localStorage.setItem("checkedTasks", JSON.stringify(checkedTasks));
 
-    targetTask.currentPassword = generateRandomPassword();
-    localStorage.setItem("tasks", JSON.stringify(tasks));
+    try {
+      const { db, doc, getDoc, setDoc, updateDoc, serverTimestamp } = window._fb;
 
-    alert("🎉 Password Benar! Status tugas Anda berhasil diperbarui menjadi SELESAI.");
-    loadTasks();
+      // Update checkedTasks di Firestore
+      const checkedRef = doc(db, "checkedTasks", studentKey);
+      const checkedDoc = await getDoc(checkedRef);
+      let currentList = [];
+      if (checkedDoc.exists()) {
+        currentList = checkedDoc.data().list || [];
+      }
+      if (!currentList.includes(taskId)) {
+        currentList.push(taskId);
+      }
+      await setDoc(checkedRef, { list: currentList, updatedAt: serverTimestamp() });
+
+      // Regenerate password tugas di Firestore
+      const newPassword = generateRandomPassword();
+      const taskRef = doc(db, "tasks", taskId);
+      await updateDoc(taskRef, { currentPassword: newPassword });
+
+      alert("🎉 Password Benar! Status tugas Anda berhasil diperbarui menjadi SELESAI.");
+    } catch(err) {
+      console.error("Gagal memperbarui tugas:", err);
+      alert("Terjadi kesalahan. Coba lagi.");
+    }
   } else {
     alert("❌ Password salah atau sudah kedaluwarsa! Tanyakan password baru ke guru Anda.");
   }
 }
 
-// ================= TAMBAH & EDIT TUGAS GURU =================
-function addTask(){
+// ================= TAMBAH & EDIT TUGAS GURU (Firebase) =================
+async function addTask(){
   if(!currentUser){
     alert("Silakan login dulu!");
     return;
@@ -1016,26 +1157,39 @@ function addTask(){
   }
 
   const teacherKey = currentUser.username;
+  const btn = document.querySelector(".teacher-form button");
+  btn.disabled = true;
+  const origText = btn.innerText;
+  btn.innerText = "Menyimpan...";
 
-  if(editId !== null){
-    tasks[teacherKey] = tasks[teacherKey].map(t =>
-      t.id === editId ? { ...t, subject, task: taskText, deadline } : t
-    );
-    editId = null;
-  } else {
-    tasks[teacherKey].push({
-      id: Date.now(),
-      subject,
-      task: taskText,
-      deadline,
-      teacher: teacherKey,
-      currentPassword: generateRandomPassword()
-    });
+  try {
+    const { db, doc, setDoc, updateDoc, serverTimestamp } = window._fb;
+
+    if(editId !== null){
+      // Update tugas yang ada
+      await updateDoc(doc(db, "tasks", editId), { subject, task: taskText, deadline });
+      editId = null;
+    } else {
+      // Buat tugas baru — gunakan ID unik Firebase-style
+      const newId = `${teacherKey}_${Date.now()}`;
+      await setDoc(doc(db, "tasks", newId), {
+        subject,
+        task: taskText,
+        deadline,
+        teacher: teacherKey,
+        currentPassword: generateRandomPassword(),
+        createdAt: serverTimestamp()
+      });
+    }
+
+    resetTeacherForm();
+  } catch(err) {
+    console.error("Gagal menyimpan tugas:", err);
+    alert("Gagal menyimpan tugas. Coba lagi.");
+  } finally {
+    btn.disabled = false;
+    btn.innerText = origText;
   }
-
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-  resetTeacherForm();
-  loadTasks();
 }
 
 // ================= RENDER LIST TUGAS =================
@@ -1139,14 +1293,17 @@ function loadTasks(){
   updateChart();
 }
 
-// ================= HAPUS TUGAS GURU =================
-function deleteTask(id){
+// ================= HAPUS TUGAS GURU (Firebase) =================
+async function deleteTask(id){
   if(!currentUser) return;
   if(confirm("Apakah Anda yakin ingin menghapus tugas ini?")){
-    const teacherKey = currentUser.username;
-    tasks[teacherKey] = (tasks[teacherKey] || []).filter(t => t.id !== id);
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-    loadTasks();
+    try {
+      const { db, doc, deleteDoc } = window._fb;
+      await deleteDoc(doc(db, "tasks", id));
+    } catch(err) {
+      console.error("Gagal menghapus tugas:", err);
+      alert("Gagal menghapus tugas. Coba lagi.");
+    }
   }
 }
 
