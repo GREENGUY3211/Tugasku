@@ -100,6 +100,7 @@
           document.getElementById("dashboardTitle").innerText = "Dashboard Siswa";
           document.getElementById("profileRole").innerText = "Siswa";
           document.getElementById("classRow").style.display = "block";
+          document.getElementById("profileClass").innerText = currentUser.kelas || "-";
           document.getElementById("profileImage").src = currentUser.photoURL || "https://via.placeholder.com/150";
         } else {
           document.getElementById("studentPanel").style.display = "none";
@@ -438,6 +439,15 @@ button:hover{
   color:black;
 }
 
+.task-textarea {
+  resize: vertical;
+  min-height: 100px;
+  max-height: 300px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+
 /* ================= NAV ================= */
 .bottom-nav, .auth-bottom-nav{
   position:fixed;
@@ -666,10 +676,6 @@ button:hover{
       <label>Full Name</label>
     </div>
     <div class="input-group">
-      <input type="text" id="username" required>
-      <label>Username</label>
-    </div>
-    <div class="input-group">
       <input type="email" id="email" required>
       <label>Email</label>
     </div>
@@ -682,9 +688,26 @@ button:hover{
       <label>Confirm Password</label>
     </div>
     <div class="input-group">
-      <select id="role">
+      <select id="role" onchange="toggleClassField()">
         <option value="student">Siswa</option>
         <option value="teacher">Guru</option>
+      </select>
+    </div>
+    <div class="input-group" id="classFieldWrapper">
+      <select id="classSelect">
+        <option value="">Pilih Kelas</option>
+        <option value="X IPA 1">X IPA 1</option>
+        <option value="X IPA 2">X IPA 2</option>
+        <option value="X IPS 1">X IPS 1</option>
+        <option value="X IPS 2">X IPS 2</option>
+        <option value="XI IPA 1">XI IPA 1</option>
+        <option value="XI IPA 2">XI IPA 2</option>
+        <option value="XI IPS 1">XI IPS 1</option>
+        <option value="XI IPS 2">XI IPS 2</option>
+        <option value="XII IPA 1">XII IPA 1</option>
+        <option value="XII IPA 2">XII IPA 2</option>
+        <option value="XII IPS 1">XII IPS 1</option>
+        <option value="XII IPS 2">XII IPS 2</option>
       </select>
     </div>
     <button type="button" onclick="register()">Register</button>
@@ -716,7 +739,7 @@ button:hover{
         <p><b>Username:</b> <span id="profileUsername"></span></p>
         <p><b>Email:</b> <span id="profileEmail"></span></p>
         <p><b>Role:</b> <span id="profileRole"></span></p>
-        <p id="classRow"><b>Kelas:</b> XII IPA 1</p>
+        <p id="classRow"><b>Kelas:</b> <span id="profileClass">-</span></p>
       </div>
     </div>
 
@@ -757,6 +780,21 @@ button:hover{
         <h2 style="margin-top:15px;">👩‍🏫 Manajemen Tugas</h2>
         <div class="teacher-form">
           <h3>➕ Tambah Tugas</h3>
+          <select id="teacherClassSelect" class="teacher-input">
+            <option value="">Pilih Kelas Tujuan</option>
+            <option value="X IPA 1">X IPA 1</option>
+            <option value="X IPA 2">X IPA 2</option>
+            <option value="X IPS 1">X IPS 1</option>
+            <option value="X IPS 2">X IPS 2</option>
+            <option value="XI IPA 1">XI IPA 1</option>
+            <option value="XI IPA 2">XI IPA 2</option>
+            <option value="XI IPS 1">XI IPS 1</option>
+            <option value="XI IPS 2">XI IPS 2</option>
+            <option value="XII IPA 1">XII IPA 1</option>
+            <option value="XII IPA 2">XII IPA 2</option>
+            <option value="XII IPS 1">XII IPS 1</option>
+            <option value="XII IPS 2">XII IPS 2</option>
+          </select>
           <select id="subjectSelect" class="teacher-input">
             <option value="">Pilih Mata Pelajaran</option>
             <option value="Matematika">📘 Matematika</option>
@@ -765,7 +803,7 @@ button:hover{
             <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
             <option value="Sejarah">🏛️ Sejarah</option>
           </select>
-          <input type="text" id="taskInput" placeholder="Nama Tugas">
+          <textarea id="taskInput" placeholder="Deskripsi Tugas" class="teacher-input task-textarea" rows="4"></textarea>
           <select id="deadlineInput" class="teacher-input">
             <option value="">Pilih Deadline Mei 2026</option>
             <option>25 Mei 2026</option>
@@ -924,17 +962,32 @@ function switchForm(){
   }
 }
 
-// ================= REGISTER (Firebase) =================
+// ================= TOGGLE KELAS FIELD DI SIGNUP =================
+function toggleClassField(){
+  const role = document.getElementById("role").value;
+  const classWrapper = document.getElementById("classFieldWrapper");
+  if(role === "teacher"){
+    classWrapper.style.display = "none";
+    document.getElementById("classSelect").value = "";
+  } else {
+    classWrapper.style.display = "block";
+  }
+}
 async function register(){
   const fullName = document.getElementById("fullName").value.trim();
-  const username = document.getElementById("username").value.trim();
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
   const role = document.getElementById("role").value;
+  const kelas = document.getElementById("classSelect").value;
 
-  if(!fullName || !username || !email || !password){
+  if(!fullName || !email || !password){
     alert("Semua data harus diisi!");
+    return;
+  }
+
+  if(role === "student" && !kelas){
+    alert("Silakan pilih kelas terlebih dahulu!");
     return;
   }
 
@@ -954,12 +1007,16 @@ async function register(){
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCred.user.uid;
 
+    // Generate username otomatis dari nama + angka acak
+    const autoUsername = fullName.toLowerCase().replace(/\s+/g, '') + Math.floor(1000 + Math.random() * 9000);
+
     // Simpan data profil ke Firestore
     await setDoc(doc(db, "users", uid), {
       fullName,
-      username,
+      username: autoUsername,
       email,
       role,
+      kelas: role === "student" ? kelas : "",
       photoURL: "",
       createdAt: serverTimestamp()
     });
@@ -1150,9 +1207,10 @@ async function addTask(){
   const subject = document.getElementById("subjectSelect").value;
   const taskText = document.getElementById("taskInput").value;
   const deadline = document.getElementById("deadlineInput").value;
+  const targetClass = document.getElementById("teacherClassSelect").value;
 
-  if(!subject || !taskText || !deadline){
-    alert("Isi semua data tugas terlebih dahulu!");
+  if(!targetClass || !subject || !taskText || !deadline){
+    alert("Isi semua data tugas terlebih dahulu, termasuk pilihan kelas!");
     return;
   }
 
@@ -1167,7 +1225,7 @@ async function addTask(){
 
     if(editId !== null){
       // Update tugas yang ada
-      await updateDoc(doc(db, "tasks", editId), { subject, task: taskText, deadline });
+      await updateDoc(doc(db, "tasks", editId), { subject, task: taskText, deadline, targetClass });
       editId = null;
     } else {
       // Buat tugas baru — gunakan ID unik Firebase-style
@@ -1176,6 +1234,7 @@ async function addTask(){
         subject,
         task: taskText,
         deadline,
+        targetClass,
         teacher: teacherKey,
         currentPassword: generateRandomPassword(),
         createdAt: serverTimestamp()
@@ -1229,6 +1288,7 @@ function loadTasks(){
       card.innerHTML = `
         <h3>📚 ${data.subject}</h3>
         <p>📝 ${data.task}</p>
+        <small>🏫 Kelas: ${data.targetClass || '-'}</small><br>
         <small>📅 Deadline: ${data.deadline}</small><br>
         <div style="margin-top: 5px;">
           <small style="color: #60a5fa;">🔑 Token Akses Murid Saat Ini:</small><br>
@@ -1320,6 +1380,7 @@ function startEdit(id){
   document.getElementById("subjectSelect").value = task.subject;
   document.getElementById("taskInput").value = task.task;
   document.getElementById("deadlineInput").value = task.deadline;
+  if(task.targetClass) document.getElementById("teacherClassSelect").value = task.targetClass;
   
   const formTitle = document.querySelector(".teacher-form h3");
   const actionBtn = document.querySelector(".teacher-form button");
@@ -1352,10 +1413,12 @@ function resetTeacherForm(){
   const subjectSelect = document.getElementById("subjectSelect");
   const taskInput = document.getElementById("taskInput");
   const deadlineInput = document.getElementById("deadlineInput");
+  const teacherClassSelect = document.getElementById("teacherClassSelect");
 
   if(subjectSelect) subjectSelect.value = "";
   if(taskInput) taskInput.value = "";
   if(deadlineInput) deadlineInput.value = "";
+  if(teacherClassSelect) teacherClassSelect.value = "";
   
   const formTitle = document.querySelector(".teacher-form h3");
   const actionBtn = document.querySelector(".teacher-form button");
