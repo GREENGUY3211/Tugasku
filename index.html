@@ -1,0 +1,415 @@
+<script>
+let editId = null;
+let currentUser = null;
+let tasks = {};
+let checkedTasks = {};
+
+// URL Server Backend Node.js
+const API_URL = "http://localhost:3000/api";
+
+// ================= MODAL HANDLER FUNCTION =================
+function openModal(id) {
+  document.getElementById(id).style.display = "flex";
+}
+
+function closeModal(event, id) {
+  if(event.target === document.getElementById(id)) {
+    document.getElementById(id).style.display = "none";
+  }
+}
+
+// ================= SWITCH TABS =================
+function switchTab(target) {
+  const profileSection = document.getElementById("profileSection");
+  const classSection = document.getElementById("classSection");
+  const navItems = document.querySelectorAll("#bottomNav .nav-item");
+
+  navItems[0].classList.remove("active");
+  navItems[1].classList.remove("active");
+
+  if (target === 'profile') {
+    profileSection.style.display = "block";
+    classSection.style.display = "none";
+    navItems[0].classList.add("active");
+  } else if (target === 'class') {
+    profileSection.style.display = "none";
+    classSection.style.display = "block";
+    navItems[1].classList.add("active");
+    fetchAndLoadTasks(); // Ambil data segar dari server saat buka tab kelas
+  }
+}
+
+function switchForm(){
+  const loginForm = document.getElementById("loginForm");
+  const registerForm = document.getElementById("registerForm");
+  const title = document.getElementById("formTitle");
+  const authBottomNav = document.getElementById("authBottomNav");
+
+  if(loginForm.style.display !== "none"){
+    loginForm.style.display = "none";
+    registerForm.style.display = "block";
+    title.innerText = "Sign Up";
+    authBottomNav.style.display = "none";
+  } else {
+    loginForm.style.display = "block";
+    registerForm.style.display = "none";
+    title.innerText = "Sign In";
+    authBottomNav.style.display = "flex";
+  }
+}
+
+// ================= SYNC SERVER DATA =================
+async function fetchAndLoadTasks() {
+  try {
+    const response = await fetch(`${API_URL}/tasks`);
+    const data = await response.json();
+    tasks = data.tasks;
+    checkedTasks = data.checkedTasks;
+    renderTasksList();
+  } catch (error) {
+    console.error("Gagal sinkronisasi data dari server", error);
+  }
+}
+
+// ================= REGISTER =================
+async function register(){
+  const fullName = document.getElementById("fullName").value;
+  const username = document.getElementById("username").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  const role = document.getElementById("role").value;
+
+  if(!fullName || !username || !email || !password){
+    alert("Semua data harus diisi!");
+    return;
+  }
+  if(password !== confirmPassword){
+    alert("Password tidak sama!");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName, username, email, password, role })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message);
+
+    alert("Register berhasil! Silakan login.");
+    switchForm();
+    document.getElementById("loginUser").value = username;
+    document.getElementById("loginPass").value = password;
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// ================= LOGIN =================
+async function login(){
+  const loginUser = document.getElementById("loginUser").value;
+  const loginPass = document.getElementById("loginPass").value;
+
+  try {
+    const res = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loginUser, loginPass })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message);
+
+    currentUser = data.user;
+
+    document.getElementById("authBox").style.display = "none";
+    document.getElementById("authBottomNav").style.display = "none"; 
+    document.getElementById("dashboard").style.display = "block";
+    document.getElementById("bottomNav").style.display = "flex"; 
+
+    switchTab('profile');
+
+    document.getElementById("profileName").innerText = currentUser.fullName;
+    document.getElementById("profileUsername").innerText = currentUser.username;
+    document.getElementById("profileEmail").innerText = currentUser.email;
+
+    if(currentUser.role === "student"){
+      document.getElementById("studentPanel").style.display = "block";
+      document.getElementById("teacherPanel").style.display = "none";
+      document.getElementById("dashboardTitle").innerText = "Dashboard Siswa";
+      document.getElementById("profileRole").innerText = "Siswa";
+      document.getElementById("classRow").style.display = "block";
+    } else {
+      document.getElementById("studentPanel").style.display = "none";
+      document.getElementById("teacherPanel").style.display = "block";
+      document.getElementById("dashboardTitle").innerText = "Dashboard Guru";
+      document.getElementById("profileRole").innerText = "Guru";
+      document.getElementById("classRow").style.display = "none";
+    }
+    
+    fetchAndLoadTasks();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// ================= LOGOUT =================
+function logout(){
+  currentUser = null;
+  editId = null;
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("bottomNav").style.display = "none"; 
+  document.getElementById("authBox").style.display = "block";
+  document.getElementById("authBottomNav").style.display = "flex"; 
+  document.getElementById("loginUser").value = "";
+  document.getElementById("loginPass").value = "";
+  resetTeacherForm();
+}
+
+function toggleSubject(id){
+  const taskContainer = document.getElementById(id);
+  taskContainer.style.display = (taskContainer.style.display === "block") ? "none" : "block";
+}
+
+// ================= VERIFIKASI PASSWORD TUGAS =================
+async function verifyTaskPassword(taskId, teacherUsername) {
+  if (!currentUser || currentUser.role !== "student") return;
+
+  const inputElem = document.getElementById(`pass-input-${taskId}`);
+  const enteredPassword = inputElem.value.trim();
+
+  if (!enteredPassword) {
+    alert("Masukkan password validasi terlebih dahulu!");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/tasks/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        taskId,
+        teacherUsername,
+        studentUsername: currentUser.username,
+        enteredPassword
+      })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message);
+
+    tasks = data.tasks;
+    checkedTasks = data.checkedTasks;
+    alert("🎉 Token Benar! Status tugas berhasil diperbarui menjadi SELESAI.");
+    renderTasksList();
+  } catch (err) {
+    alert("❌ " + err.message);
+  }
+}
+
+// ================= TAMBAH & EDIT TUGAS GURU =================
+async function addTask(){
+  if(!currentUser) return alert("Silakan login dulu!");
+
+  const subject = document.getElementById("subjectSelect").value;
+  const taskText = document.getElementById("taskInput").value;
+  const deadline = document.getElementById("deadlineInput").value;
+
+  if(!subject || !taskText || !deadline){
+    alert("Isi semua data tugas terlebih dahulu!");
+    return;
+  }
+
+  try {
+    let res, data;
+    if(editId !== null){
+      // Skenario Edit Tugas
+      res = await fetch(`${API_URL}/tasks/edit`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editId, subject, taskText, deadline, teacherUsername: currentUser.username })
+      });
+      editId = null;
+    } else {
+      // Skenario Tambah Tugas Baru
+      res = await fetch(`${API_URL}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, taskText, deadline, teacherUsername: currentUser.username })
+      });
+    }
+
+    data = await res.json();
+    tasks = data.tasks;
+    checkedTasks = data.checkedTasks;
+
+    resetTeacherForm();
+    renderTasksList();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ================= RENDER LIST TUGAS KE UI =================
+function renderTasksList(){
+  if(!currentUser) return;
+
+  const teacherList = document.getElementById("teacherTaskList");
+  const mathBox = document.getElementById("mathTask");
+  const scienceBox = document.getElementById("scienceTask");
+  const indoBox = document.getElementById("indoTask");
+  const englishBox = document.getElementById("englishTask");
+  const historyBox = document.getElementById("historyTask");
+
+  if(teacherList) teacherList.innerHTML = "";
+  if(mathBox) mathBox.innerHTML = "";
+  if(scienceBox) scienceBox.innerHTML = "";
+  if(indoBox) indoBox.innerHTML = "";
+  if(englishBox) englishBox.innerHTML = "";
+  if(historyBox) historyBox.innerHTML = "";
+
+  let allTasks = [];
+  Object.keys(tasks).forEach(teacher => {
+    if(Array.isArray(tasks[teacher])){
+      tasks[teacher].forEach(t => allTasks.push(t));
+    }
+  });
+
+  const studentKey = currentUser.username;
+  const userCheckedList = checkedTasks[studentKey] || [];
+
+  allTasks.forEach(data => {
+    if(currentUser.role === "teacher" && data.teacher === currentUser.username){
+      const card = document.createElement("div");
+      card.className = "teacher-card";
+      card.innerHTML = `
+        <h3>📚 ${data.subject}</h3>
+        <p>📝 ${data.task}</p>
+        <small>📅 Deadline: ${data.deadline}</small><br>
+        <div style="margin-top: 5px;">
+          <small style="color: #60a5fa;">🔑 Token Akses Murid Saat Ini:</small><br>
+          <span class="password-badge">${data.currentPassword || 'TITIK-KOSONG'}</span>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:10px;">
+          <button onclick="startEdit(${data.id})" style="background:#facc15; color:black; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">✏️ Edit</button>
+          <button onclick="deleteTask(${data.id})" style="background:#ef4444; color:white; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">🗑️ Hapus</button>
+        </div>
+      `;
+      if(teacherList) teacherList.appendChild(card);
+    }
+
+    const isCompleted = userCheckedList.includes(data.id);
+    const studentTaskCard = document.createElement("div");
+    studentTaskCard.className = `glass-card student-task-item ${isCompleted ? 'completed' : ''}`;
+    studentTaskCard.id = `student-task-${data.id}`;
+    
+    let validationSectionHtml = isCompleted 
+      ? `<div style="margin-top:5px; color:#4ade80; font-size:12px; font-weight:600;">✔️ Selesai Terverifikasi</div>`
+      : `<div class="password-verif-box">
+          <input type="text" id="pass-input-${data.id}" placeholder="Kode Guru..." maxlength="6">
+          <button onclick="verifyTaskPassword(${data.id}, '${data.teacher}')">Centang</button>
+         </div>`;
+
+    studentTaskCard.innerHTML = `
+      <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''} disabled style="cursor: not-allowed;">
+      <div class="task-text-content">
+        <h4>📝 ${data.task}</h4>
+        <p style="font-size:13px; opacity:0.8;">Mapel: ${data.subject} (Oleh: ${data.teacher})</p>
+        <small>📅 Deadline: ${data.deadline}</small>
+        ${validationSectionHtml}
+      </div>
+    `;
+
+    if(data.subject === "Matematika" && mathBox) mathBox.appendChild(studentTaskCard);
+    else if(data.subject === "IPA" && scienceBox) scienceBox.appendChild(studentTaskCard);
+    else if(data.subject === "Bahasa Indonesia" && indoBox) indoBox.appendChild(studentTaskCard);
+    else if(data.subject === "Bahasa Inggris" && englishBox) englishBox.appendChild(studentTaskCard);
+    else if(data.subject === "Sejarah" && historyBox) historyBox.appendChild(studentTaskCard);
+  });
+
+  updateChart();
+}
+
+// ================= HAPUS TUGAS GURU =================
+async function deleteTask(id){
+  if(!currentUser) return;
+  if(confirm("Apakah Anda yakin ingin menghapus tugas ini?")){
+    try {
+      const res = await fetch(`${API_URL}/tasks/${currentUser.username}/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      tasks = data.tasks;
+      checkedTasks = data.checkedTasks;
+      renderTasksList();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+}
+
+// ================= AMBIL DATA KE FORM UNTUK EDIT =================
+function startEdit(id){
+  if(!currentUser) return;
+  const task = (tasks[currentUser.username] || []).find(t => t.id === id);
+  if(!task) return;
+
+  editId = id;
+  document.getElementById("subjectSelect").value = task.subject;
+  document.getElementById("taskInput").value = task.task;
+  document.getElementById("deadlineInput").value = task.deadline;
+  
+  const formTitle = document.querySelector(".teacher-form h3");
+  const actionBtn = document.querySelector(".teacher-form button");
+  
+  if(formTitle) formTitle.innerHTML = `<span style="color: #facc15;">📝 Mode Edit Tugas</span>`;
+  if(actionBtn) {
+    actionBtn.innerText = "✏️ Simpan Perubahan";
+    actionBtn.style.background = "linear-gradient(to right, #facc15, #eab308)";
+    actionBtn.style.color = "black";
+  }
+  document.getElementById("subjectSelect").scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetTeacherForm(){
+  editId = null;
+  if(document.getElementById("subjectSelect")) document.getElementById("subjectSelect").value = "";
+  if(document.getElementById("taskInput")) document.getElementById("taskInput").value = "";
+  if(document.getElementById("deadlineInput")) document.getElementById("deadlineInput").value = "";
+  
+  const formTitle = document.querySelector(".teacher-form h3");
+  const actionBtn = document.querySelector(".teacher-form button");
+  if(formTitle) formTitle.innerHTML = "➕ Tambah Tugas";
+  if(actionBtn) {
+    actionBtn.innerText = "Tambahkan Tugas";
+    actionBtn.style.background = "rgba(255, 255, 255, 0.25)";
+    actionBtn.style.color = "white";
+  }
+}
+
+// ================= UPDATE GRAFIK BATANG =================
+function updateChart(){
+  const dates = {
+    "25 Mei 2026": 0, "26 Mei 2026": 0, "27 Mei 2026": 0,
+    "28 Mei 2026": 0, "29 Mei 2026": 0, "30 Mei 2026": 0
+  };
+
+  const studentKey = currentUser ? currentUser.username : "";
+  const userCheckedList = (currentUser && currentUser.role === "student") ? (checkedTasks[studentKey] || []) : [];
+
+  Object.keys(tasks).forEach(teacher => {
+    if(Array.isArray(tasks[teacher])){
+      tasks[teacher].forEach(t => {
+        if(dates[t.deadline] !== undefined && !userCheckedList.includes(t.id)){
+          dates[t.deadline]++;
+        }
+      });
+    }
+  });
+
+  const bars = document.querySelectorAll(".bar");
+  Object.values(dates).forEach((total, i) => {
+    if(!bars[i]) return;
+    bars[i].style.height = (total * 35) + "px";
+    bars[i].querySelector("span").innerText = total;
+  });
+}
+</script>
