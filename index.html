@@ -1084,6 +1084,8 @@ async function login(){
     else if (err.code === "auth/invalid-email") msg = "Format email tidak valid!";
     else if (err.code === "auth/too-many-requests") msg = "Terlalu banyak percobaan login. Coba beberapa saat lagi.";
     alert(msg);
+  } finally {
+    // Selalu reset button, baik sukses maupun gagal
     btn.innerText = "Login";
     btn.disabled = false;
   }
