@@ -78,9 +78,22 @@
   // Pantau status login dari Firebase Auth
   onAuthStateChanged(auth, async (firebaseUser) => {
     if (firebaseUser) {
+      try {
       // User sudah login — ambil data profil dari Firestore
       const { db, doc, getDoc } = window._fb;
       const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+      // Selalu reset tombol login (sukses maupun gagal)
+      const loginBtnReset = document.querySelector("#loginForm button[type='button']");
+      if (loginBtnReset) { loginBtnReset.innerText = "Login"; loginBtnReset.disabled = false; }
+
+      if (!userDoc.exists()) {
+        // Akun Auth ada tapi data Firestore tidak ditemukan — logout paksa
+        alert("Data akun tidak ditemukan. Silakan daftar ulang.");
+        const { signOut } = window._fb;
+        await signOut(auth);
+        return;
+      }
+
       if (userDoc.exists()) {
         currentUser = { uid: firebaseUser.uid, ...userDoc.data() };
         window._listenTasks();
@@ -90,9 +103,6 @@
         document.getElementById("authBottomNav").style.display = "none";
         document.getElementById("dashboard").style.display = "block";
         document.getElementById("bottomNav").style.display = "flex";
-        // Reset tombol login agar tidak tertinggal disabled
-        const loginBtnReset = document.querySelector("#loginForm button[type='button']");
-        if (loginBtnReset) { loginBtnReset.innerText = "Login"; loginBtnReset.disabled = false; }
         switchTab('profile');
         document.getElementById("profileName").innerText = currentUser.fullName;
         document.getElementById("profileUsername").innerText = currentUser.username;
@@ -113,6 +123,13 @@
           document.getElementById("classRow").style.display = "none";
           document.getElementById("profileImage").src = currentUser.photoURL || "https://via.placeholder.com/150";
         }
+      }
+      } catch(e) {
+        // Firestore error — reset button dan tampilkan pesan
+        console.error("onAuthStateChanged error:", e);
+        const loginBtnReset2 = document.querySelector("#loginForm button[type='button']");
+        if (loginBtnReset2) { loginBtnReset2.innerText = "Login"; loginBtnReset2.disabled = false; }
+        alert("Terjadi kesalahan saat memuat data. Periksa koneksi internet.");
       }
     }
   });
