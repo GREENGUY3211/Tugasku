@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tugasku - Secure Task Management</title>
+<title>School System Full - Secure Validation</title>
 
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -16,401 +16,772 @@
   font-family:'Poppins',sans-serif;
 }
 
-body {
+body{
   min-height:100vh;
-  background: radial-gradient(circle at 20% 30%, #202b36 0%, #111823 100%);
-  color:#f3f4f6;
-  padding-bottom:80px;
+  background:url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiaoFKICUaz8ee0QKjuouP60hG_wdXlMtHFWvm5zt-OxqwSiwcp8AZ8JOJ1DSrXhweG2aBVmjaEvG090cOqV9HYGfecMoA_Hcgi6sVD7QRkuwJmC2wO5WAykvWcU2v69Ja5UEhUXTHnrkMazwpUKuhfXQrpczRvCjmf5EogIBn98Qil0y8EPEQS_yPvMTG-/s1267/WhatsApp%20Image%202024-03-04%20at%2010.16.20%20(16).jpeg') center/cover no-repeat;
+  display:flex;
+  flex-direction: column;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+  position:relative;
+}
+
+body::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+}
+
+/* ================= CONTAINER ================= */
+.container,
+.glass-dashboard{
+  position:relative;
+  z-index:1;
+  width:100%;
+  max-width:1100px;
+  background:rgba(255,255,255,0.1);
+  backdrop-filter:blur(12px);
+  border-radius:28px;
+  padding:20px;
+  color:white;
+  overflow-y:auto;
 }
 
 .container{
-  max-width:500px;
-  margin:0 auto;
-  padding:20px;
+  max-width:420px;
+  margin-bottom: 30px;
 }
 
-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:25px;
+.glass-dashboard{
+  display:none;
+  height:90vh;
 }
 
-.logo-section h1 {
-  font-size:24px;
-  background:linear-gradient(to right, #ffffff, #9ca3af);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-}
-
-.glass-card{
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius:20px;
-  padding:20px;
-  margin-bottom:20px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-input, select, textarea{
-  width:100%;
-  padding:14px;
-  background:rgba(15, 23, 42, 0.6);
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:12px;
+/* ================= TITLE ================= */
+h1,h2,h3,h4,p,small{
   color:white;
-  margin-bottom:15px;
-  font-size:14px;
+}
+
+h2{
+  text-align:center;
+  margin-bottom:10px;
+}
+
+/* ================= FORM ================= */
+form{
+  width:100%;
+}
+
+.input-group{
+  position:relative;
+  margin-top:25px;
+}
+
+.input-group input,
+.input-group select{
+  width:100%;
+  padding:16px 10px 8px;
+  background:transparent;
+  border:none;
   outline:none;
+  color:white;
+  font-size:16px;
+  border-bottom:2px solid rgba(255,255,255,0.3);
 }
 
-input:focus, select:focus, textarea:focus{
-  border-color: #9ca3af;
+.input-group select option{
+  color:black;
 }
 
+.input-group label{
+  position:absolute;
+  left:10px;
+  bottom:8px;
+  color:rgba(255,255,255,0.8);
+  transition:0.3s;
+}
+
+.input-group input:focus ~ label,
+.input-group input:valid ~ label{
+  transform:translateY(-30px);
+  font-size:12px;
+  color:white;
+}
+
+/* ================= BUTTON ================= */
 button{
   width:100%;
-  padding:14px;
-  background:linear-gradient(to right, #374151, #1f2937);
-  border:1px solid rgba(255,255,255,0.1);
+  padding:12px;
+  margin-top:20px;
+  border:none;
+  border-radius:10px;
+  background:rgba(255,255,255,0.25);
   color:white;
-  border-radius:12px;
   font-weight:600;
   cursor:pointer;
-  margin-bottom:10px;
-  transition: 0.3s;
+  transition:0.3s;
 }
 
 button:hover{
-  opacity:0.9;
-  transform: translateY(-1px);
+  background:rgba(255,255,255,0.4);
 }
 
-/* Auth Navigation Toggle */
-.auth-nav {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-  margin-top: 15px;
-  font-size: 14px;
-}
-.auth-nav span {
-  color: #9ca3af;
-  cursor: pointer;
-  text-decoration: underline;
+/* ================= LINK ================= */
+.link{
+  margin-top:20px;
+  text-align:center;
 }
 
-/* Bottom Bar Navigation */
-#bottomNav {
-  position:fixed;
-  bottom:0;
-  left:50%;
-  transform:translateX(-50%);
-  width:100%;
-  max-width:500px;
-  background:rgba(17, 24, 39, 0.85);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  display:flex;
-  justify-content:space-around;
-  padding:12px 0;
-  border-top:1px solid rgba(255,255,255,0.08);
-  z-index:999;
+.link a{
+  color:white;
+  text-decoration:none;
+  font-weight:bold;
 }
 
-.nav-item{
+/* ================= PROFILE ================= */
+.profile-wrapper{
   display:flex;
   flex-direction:column;
   align-items:center;
-  color:#6b7280;
-  font-size:12px;
-  cursor:pointer;
-  text-decoration:none;
+  margin-bottom:20px;
 }
 
-.nav-item i{
-  font-size:22px;
-  margin-bottom:2px;
+.profile-pic{
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  overflow:hidden;
+  border:3px solid rgba(255,255,255,0.5);
 }
 
-.nav-item.active{
-  color:#ffffff;
+.profile-pic img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
 }
 
-/* Subject accordion */
-.subject-row {
+.profile-btn-group{
   display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:15px;
-  background:rgba(255,255,255,0.03);
-  border-radius:14px;
-  margin-bottom:10px;
-  cursor:pointer;
-}
-
-.task-container {
-  display:none;
-  padding:5px 0 10px 0;
-}
-
-/* Task Layout */
-.student-task-item {
-  display:flex;
-  gap:15px;
-  align-items:flex-start;
-  padding:15px;
-  margin-top:10px;
-  background: rgba(15, 23, 42, 0.5);
-}
-
-.student-task-item.completed {
-  border-left: 4px solid #4ade80;
-  opacity: 0.8;
-}
-
-.task-checkbox {
-  width:20px;
-  height:20px;
-  margin-top:3px;
-}
-
-.task-text-content h4 {
-  font-size:15px;
-  margin-bottom:3px;
-}
-
-.password-verif-box {
-  display:flex;
-  gap:8px;
+  gap:10px;
   margin-top:10px;
 }
 
-.password-verif-box input {
-  margin:0;
-  padding:8px;
-  text-transform: uppercase;
-  text-align: center;
-  font-weight: bold;
+.btn-upload, .btn-remove-photo{
+  padding:10px 18px;
+  border:none;
+  border-radius:40px;
+  color:white;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:500;
+  transition: 0.3s;
 }
 
-.password-verif-box button {
-  margin:0;
-  padding:8px 15px;
-  width:auto;
-  background: #374151;
+.btn-upload{
+  background:rgba(255,255,255,0.2);
+}
+.btn-upload:hover{
+  background:rgba(255,255,255,0.35);
 }
 
-/* Teacher Styles */
-.teacher-form h3 {
-  margin-bottom:15px;
-  font-size:18px;
+.btn-remove-photo{
+  background:rgba(239, 68, 68, 0.4);
+}
+.btn-remove-photo:hover{
+  background:rgba(239, 68, 68, 0.7);
 }
 
-.teacher-card {
-  background:rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.05);
-  padding:15px;
-  border-radius:14px;
-  margin-bottom:15px;
-}
-
-.password-badge {
-  display:inline-block;
+/* ================= CARD ================= */
+.info-card,
+.glass-card,
+.class-card,
+.teacher-card{
   background:rgba(255,255,255,0.1);
-  padding:4px 10px;
-  border-radius:6px;
-  font-family:monospace;
-  font-size:16px;
-  font-weight:bold;
-  letter-spacing:1px;
-  color:#facc15;
-  margin-top:5px;
-}
-
-/* Chart Styles */
-.chart-container {
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-end;
-  height:150px;
-  padding:10px 20px;
-  background:rgba(0,0,0,0.2);
-  border-radius:14px;
+  padding:15px;
+  border-radius:20px;
   margin-top:15px;
 }
 
-.bar-wrapper {
+.class-card{
+  cursor:pointer;
+  transition:0.3s;
+}
+
+.class-card:hover{
+  background:rgba(255,255,255,0.16);
+}
+
+.task-container{
+  display:none;
+  margin-top:15px;
+}
+
+.task-container .glass-card{
+  margin-top:10px;
+}
+
+/* Gaya Khusus Tugas Selesai */
+.student-task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  transition: 0.3s;
+}
+
+.student-task-item.completed {
+  opacity: 0.6;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+}
+
+.student-task-item.completed h4,
+.student-task-item.completed p,
+.student-task-item.completed small {
+  text-decoration: line-through;
+}
+
+.task-checkbox {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  accent-color: #4ade80;
+  margin-top: 3px;
+}
+
+.task-text-content {
+  flex: 1;
+}
+
+/* Fitur input verifikasi password di sisi murid */
+.password-verif-box {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.password-verif-box input {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.2);
+  color: white;
+  font-size: 13px;
+  width: 130px;
+}
+
+.password-verif-box button {
+  width: auto;
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  background: #60a5fa;
+  color: black;
+}
+
+/* Badge Password khusus di Halaman Guru */
+.password-badge {
+  display: inline-block;
+  background: #facc15;
+  color: black;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-family: monospace;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+/* ================= GURU PANEL ================= */
+.teacher-panel{
+  display:none;
+}
+
+.teacher-form{
+  margin-top:20px;
+}
+
+.teacher-form input{
+  width:100%;
+  margin-top:10px;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:rgba(255,255,255,0.15);
+  color:white;
+}
+
+.teacher-form input::placeholder{
+  color:rgba(255,255,255,0.7);
+}
+
+.teacher-input{
+  width:100%;
+  margin-top:10px;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:rgba(255,255,255,0.15);
+  color:white;
+  outline:none;
+}
+
+.teacher-input option{
+  color:black;
+}
+
+/* ================= NAV ================= */
+.bottom-nav, .auth-bottom-nav{
+  position:fixed;
+  bottom:15px;
+  left:50%;
+  transform:translateX(-50%);
+  width:calc(100% - 40px);
+  max-width:500px;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(16px);
+  display:flex; 
+  justify-content:space-around;
+  border-radius:50px;
+  padding:10px;
+  z-index:100;
+}
+
+.bottom-nav {
+  display: none; /* Disembunyikan saat belum login */
+}
+
+.nav-item{
+  color:rgba(255,255,255,0.7);
+  text-align:center;
+  font-size:12px;
+  cursor:pointer;
+  flex:1;
+}
+
+.nav-item i{
+  display:block;
+  font-size:18px;
+}
+
+.nav-item:hover {
+  color: #60a5fa;
+}
+
+.nav-item.active{
+  color:#60a5fa;
+}
+
+.nav-item.nav-logout{
+  color:rgba(239, 68, 68, 0.8);
+}
+.nav-item.nav-logout:hover{
+  color:#ef4444;
+}
+
+/* ================= MODAL STYLE (INFO FOOTER AUTH) ================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 200;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 25px;
+  border-radius: 20px;
+  max-width: 400px;
+  width: 100%;
+  color: white;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.modal-content h3 {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  padding-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-info-list {
+  list-style: none;
+}
+
+.modal-info-list li {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.modal-info-list li b {
+  color: #facc15;
+}
+
+/* ================= PERFORMANCE CHART ================= */
+.performance-card{
+  margin-top:20px;
+  margin-bottom:30px;
+}
+
+.chart-container{
+  border-left:3px solid rgba(255,255,255,0.5);
+  border-bottom:3px solid rgba(255,255,255,0.5);
+  width:100%;
+  height:260px;
+  display:flex;
+  justify-content:space-around;
+  align-items:flex-end;
+  margin-top:20px;
+  padding:20px 10px;
+  border-radius:20px;
+  background:rgba(255,255,255,0.05);
+}
+
+.bar-box{
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:8px;
+  width:55px;
 }
 
-.bar {
-  width:25px;
-  background:linear-gradient(to top, #4b5563, #9ca3af);
-  border-radius:6px 6px 0 0;
-  height:0px;
-  transition:height 0.5s ease;
+.bar{
+  width:50px;
+  min-height:0;
+  border-radius:15px 15px 5px 5px;
+  position:relative;
   display:flex;
   justify-content:center;
   align-items:flex-start;
+  transition:0.3s;
+  box-shadow:0 0 15px rgba(255,255,255,0.2);
 }
 
-.bar span {
-  font-size:10px;
-  margin-top:-18px;
-  font-weight:600;
+.bar:hover{
+  transform:translateY(-5px);
 }
 
-.bar-label {
-  font-size:10px;
-  color:#9ca3af;
+.bar span{
+  position:absolute;
+  top:-28px;
+  font-size:14px;
+  font-weight:bold;
+  color:white;
+}
+
+.bar-box p{
+  margin-top:10px;
+  font-size:13px;
+  color:white;
+  text-align:center;
+}
+
+/* warna batang */
+.math{ background:linear-gradient(to top,#3b82f6,#60a5fa); }
+.ipa{ background:linear-gradient(to top,#22c55e,#4ade80); }
+.indo{ background:linear-gradient(to top,#f59e0b,#facc15); }
+.inggris{ background:linear-gradient(to top,#a855f7,#c084fc); }
+.sejarah{ background:linear-gradient(to top,#ef4444,#fb7185); }
+
+.dashboard-content-wrapper {
+  padding-bottom: 80px;
+}
+
+@media(max-width:500px){
+  .container,
+  .glass-dashboard{
+    padding:15px;
+  }
+  .profile-pic{
+    width:100px;
+    height:100px;
+  }
+  .profile-btn-group{
+    flex-direction: column;
+    gap: 5px;
+  }
 }
 </style>
 </head>
+
 <body>
 
-<div class="container">
-  
-  <div id="authBox" class="glass-card" style="margin-top:40px;">
-    <h2 id="formTitle" style="text-align:center; margin-bottom:20px;">Sign In</h2>
-    
-    <div id="loginForm">
-      <input type="text" id="loginUser" placeholder="Username atau Email">
-      <input type="password" id="loginPass" placeholder="Password">
-      <button onclick="login()">Masuk Aplikasi</button>
-      <div class="auth-nav">Belum punya akun? <span onclick="switchForm()">Daftar Sekarang</span></div>
-    </div>
+<div class="container" id="authBox">
+  <h2 id="formTitle">Sign In</h2>
 
-    <div id="registerForm" style="display:none;">
-      <input type="text" id="fullName" placeholder="Nama Lengkap">
-      <input type="text" id="username" placeholder="Buat Username">
-      <input type="email" id="email" placeholder="Email Aktif">
-      <input type="password" id="password" placeholder="Password">
-      <input type="password" id="confirmPassword" placeholder="Konfirmasi Password">
+  <form id="loginForm">
+    <div class="input-group">
+      <input type="text" id="loginUser" required>
+      <label>Username / Email</label>
+    </div>
+    <div class="input-group">
+      <input type="password" id="loginPass" required>
+      <label>Password</label>
+    </div>
+    <button type="button" onclick="login()">Login</button>
+    <div class="link">
+      Don't have account? <a href="#" onclick="switchForm()">Sign Up</a>
+    </div>
+  </form>
+
+  <form id="registerForm" style="display:none;">
+    <div class="input-group">
+      <input type="text" id="fullName" required>
+      <label>Full Name</label>
+    </div>
+    <div class="input-group">
+      <input type="text" id="username" required>
+      <label>Username</label>
+    </div>
+    <div class="input-group">
+      <input type="email" id="email" required>
+      <label>Email</label>
+    </div>
+    <div class="input-group">
+      <input type="password" id="password" required>
+      <label>Password</label>
+    </div>
+    <div class="input-group">
+      <input type="password" id="confirmPassword" required>
+      <label>Confirm Password</label>
+    </div>
+    <div class="input-group">
       <select id="role">
-        <option value="student">Saya adalah Siswa</option>
-        <option value="teacher">Saya adalah Guru</option>
+        <option value="student">Siswa</option>
+        <option value="teacher">Guru</option>
       </select>
-      <button onclick="register()">Buat Akun Baru</button>
-      <div class="auth-nav">Sudah memiliki akun? <span onclick="switchForm()">Masuk</span></div>
     </div>
-  </div>
+    <button type="button" onclick="register()">Register</button>
+    <div class="link">
+      Already have account? <a href="#" onclick="switchForm()">Sign In</a>
+    </div>
+  </form>
+</div>
 
-  <div id="dashboard" style="display:none;">
-    <header>
-      <div class="logo-section">
-        <h1 id="dashboardTitle">Tugasku</h1>
-        <p style="font-size:12px; color:#9ca3af;">Secure Task Manager</p>
-      </div>
-      <button onclick="logout()" style="width:auto; padding:8px 15px; margin:0; background:#ef4444; border:none; border-radius:10px; font-size:13px;">Keluar</button>
-    </header>
+<div class="glass-dashboard" id="dashboard">
+  <div class="dashboard-content-wrapper">
 
     <div id="profileSection">
-      <div class="glass-card" style="text-align:center; padding:30px 20px;">
-        <div style="width:80px; height:80px; background:rgba(255,255,255,0.1); border-radius:50%; margin:0 auto 15px auto; display:flex; align-items:center; justify-content:center;">
-          <i class="ri-user-3-fill" style="font-size:40px; color:#9ca3af;"></i>
+      <div id="photoWrapper" class="profile-wrapper">
+        <div class="profile-pic">
+          <img id="profileImage" src="https://via.placeholder.com/150">
         </div>
-        <h2 id="profileName">-</h2>
-        <p style="color:#9ca3af; font-size:14px; margin-bottom:5px;">@<span id="profileUsername">username</span></p>
-        <span id="profileRole" style="background:rgba(255,255,255,0.1); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; color:#cbd5e1;">-</span>
-        
-        <div style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px; font-size:14px; text-align:left; color:#9ca3af;">
-          <p><i class="ri-mail-line"></i> <span id="profileEmail">-</span></p>
+        <div class="profile-btn-group">
+          <button class="btn-upload" onclick="document.getElementById('photoInput').click()">Ganti Foto</button>
+          <button class="btn-remove-photo" onclick="removePhoto()">Hapus Foto</button>
         </div>
+        <input type="file" id="photoInput" accept="image/*" hidden>
       </div>
 
-      <div class="glass-card" id="classRow">
-        <h3 style="font-size:16px; margin-bottom:5px;"><i class="ri-bar-chart-box-line"></i> Pantauan Beban Tugas</h3>
-        <p style="font-size:12px; color:#9ca3af; margin-bottom:15px;">Jumlah tugas belum selesai sesuai tanggal jatuh tempo.</p>
-        <div class="chart-container">
-          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">25 Mei</div></div>
-          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">26 Mei</div></div>
-          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">27 Mei</div></div>
-          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">28 Mei</div></div>
-          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">29 Mei</div></div>
-          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">30 Mei</div></div>
-        </div>
+      <h2 id="dashboardTitle">Dashboard</h2>
+
+      <div class="info-card">
+        <p><b>Nama:</b> <span id="profileName"></span></p>
+        <p><b>Username:</b> <span id="profileUsername"></span></p>
+        <p><b>Email:</b> <span id="profileEmail"></span></p>
+        <p><b>Role:</b> <span id="profileRole"></span></p>
+        <p id="classRow"><b>Kelas:</b> XII IPA 1</p>
       </div>
     </div>
 
     <div id="classSection" style="display:none;">
       
       <div id="studentPanel">
-        <div class="glass-card">
-          <h3 style="margin-bottom:15px; font-size:16px;">📚 Ruang Mata Pelajaran</h3>
-          
-          <div class="subject-row" onclick="toggleSubject('mathTask')"><span>Matematika</span><i class="ri-arrow-down-s-line"></i></div>
-          <div class="task-container" id="mathTask"></div>
-
-          <div class="subject-row" onclick="toggleSubject('scienceTask')"><span>IPA</span><i class="ri-arrow-down-s-line"></i></div>
-          <div class="task-container" id="scienceTask"></div>
-
-          <div class="subject-row" onclick="toggleSubject('indoTask')"><span>Bahasa Indonesia</span><i class="ri-arrow-down-s-line"></i></div>
-          <div class="task-container" id="indoTask"></div>
-
-          <div class="subject-row" onclick="toggleSubject('englishTask')"><span>Bahasa Inggris</span><i class="ri-arrow-down-s-line"></i></div>
-          <div class="task-container" id="englishTask"></div>
-
-          <div class="subject-row" onclick="toggleSubject('historyTask')"><span>Sejarah</span><i class="ri-arrow-down-s-line"></i></div>
-          <div class="task-container" id="historyTask"></div>
+        <h2 style="margin-top:15px;">📚 Mata Pelajaran</h2>
+        
+        <div class="glass-card performance-card">
+          <h3>📊 Statistik Sisa Tugas Aktif</h3>
+          <div class="chart-container">
+            <div class="bar-box"><div class="bar math" style="height:0px;"><span>0</span></div><p>25 Mei</p></div>
+            <div class="bar-box"><div class="bar ipa" style="height:0px;"><span>0</span></div><p>26 Mei</p></div>
+            <div class="bar-box"><div class="bar indo" style="height:0px;"><span>0</span></div><p>27 Mei</p></div>
+            <div class="bar-box"><div class="bar inggris" style="height:0px;"><span>0</span></div><p>28 Mei</p></div>
+            <div class="bar-box"><div class="bar sejarah" style="height:0px;"><span>0</span></div><p>29 Mei</p></div>
+            <div class="bar-box"><div class="bar math" style="height:0px;"><span>0</span></div><p>30 Mei</p></div>
+          </div>
         </div>
+
+        <div class="class-card" onclick="toggleSubject('mathTask')"><h3>📘 Matematika</h3><p>Klik untuk melihat tugas</p></div>
+        <div id="mathTask" class="task-container"></div>
+
+        <div class="class-card" onclick="toggleSubject('scienceTask')"><h3>🧪 IPA</h3><p>Klik untuk melihat tugas</p></div>
+        <div id="scienceTask" class="task-container"></div>
+
+        <div class="class-card" onclick="toggleSubject('indoTask')"><h3>📖 Bahasa Indonesia</h3><p>Klik untuk melihat tugas</p></div>
+        <div id="indoTask" class="task-container"></div>
+        
+        <div class="class-card" onclick="toggleSubject('englishTask')"><h3>🇬🇧 Bahasa Inggris</h3><p>Klik untuk melihat tugas</p></div>
+        <div id="englishTask" class="task-container"></div>
+        
+        <div class="class-card" onclick="toggleSubject('historyTask')"><h3>🏛️ Sejarah</h3><p>Klik untuk melihat tugas</p></div>
+        <div id="historyTask" class="task-container"></div>
       </div>
 
-      <div id="teacherPanel" style="display:none;">
-        <div class="glass-card teacher-form">
-          <h3>➕ Tambah Tugas Baru</h3>
-          <select id="subjectSelect">
-            <option value="">-- Pilih Mata Pelajaran --</option>
-            <option value="Matematika">Matematika</option>
-            <option value="IPA">IPA</option>
-            <option value="Bahasa Indonesia">Bahasa Indonesia</option>
-            <option value="Bahasa Inggris">Bahasa Inggris</option>
-            <option value="Sejarah">Sejarah</option>
+      <div id="teacherPanel" class="teacher-panel">
+        <h2 style="margin-top:15px;">👩‍🏫 Manajemen Tugas</h2>
+        <div class="teacher-form">
+          <h3>➕ Tambah Tugas</h3>
+          <select id="subjectSelect" class="teacher-input">
+            <option value="">Pilih Mata Pelajaran</option>
+            <option value="Matematika">📘 Matematika</option>
+            <option value="IPA">🧪 IPA</option>
+            <option value="Bahasa Indonesia">📖 Bahasa Indonesia</option>
+            <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
+            <option value="Sejarah">🏛️ Sejarah</option>
           </select>
-          <textarea id="taskInput" placeholder="Ketik rincian tugas di sini..." rows="3"></textarea>
-          <select id="deadlineInput">
-            <option value="">-- Pilih Batas Waktu --</option>
-            <option value="25 Mei 2026">25 Mei 2026</option>
-            <option value="26 Mei 2026">26 Mei 2026</option>
-            <option value="27 Mei 2026">27 Mei 2026</option>
-            <option value="28 Mei 2026">28 Mei 2026</option>
-            <option value="29 Mei 2026">29 Mei 2026</option>
-            <option value="30 Mei 2026">30 Mei 2026</option>
+          <input type="text" id="taskInput" placeholder="Nama Tugas">
+          <select id="deadlineInput" class="teacher-input">
+            <option value="">Pilih Deadline Mei 2026</option>
+            <option>25 Mei 2026</option>
+            <option>26 Mei 2026</option>
+            <option>27 Mei 2026</option>
+            <option>28 Mei 2026</option>
+            <option>29 Mei 2026</option>
+            <option>30 Mei 2026</option>
           </select>
           <button onclick="addTask()">Tambahkan Tugas</button>
         </div>
-
-        <div class="glass-card">
-          <h3 style="margin-bottom:15px; font-size:16px;">📋 Daftar Tugas yang Anda Berikan</h3>
-          <div id="teacherTaskList"></div>
-        </div>
+        <h3 style="margin-top: 25px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px;">📋 Daftar Tugas Anda & Password Aktif</h3>
+        <div id="teacherTaskList"></div>
       </div>
 
     </div>
-  </div>
 
-  <div id="bottomNav" style="display:none;">
-    <div class="nav-item active" onclick="switchTab('profile')"><i class="ri-user-smile-line"></i>Profil</div>
-    <div class="nav-item" onclick="switchTab('class')"><i class="ri-book-open-line"></i>Kelas</div>
   </div>
-
 </div>
+
+<div class="auth-bottom-nav" id="authBottomNav">
+  <div class="nav-item" onclick="openModal('criticModal')">
+    <i class="ri-customer-service-2-line"></i>Critic & Help
+  </div>
+  <div class="nav-item" onclick="openModal('creditModal')">
+    <i class="ri-award-line"></i>Credit
+  </div>
+  <div class="nav-item" onclick="openModal('donateModal')">
+    <i class="ri-heart-3-line"></i>Donate
+  </div>
+</div>
+
+<div class="bottom-nav" id="bottomNav">
+  <div class="nav-item active" onclick="switchTab('profile')">
+    <i class="ri-user-3-line"></i>Profil
+  </div>
+  <div class="nav-item" onclick="switchTab('class')">
+    <i class="ri-book-2-line"></i>Kelas
+  </div>
+  <div class="nav-item nav-logout" onclick="logout()">
+    <i class="ri-logout-box-r-line"></i>Logout
+  </div>
+</div>
+
+<div class="modal-overlay" id="criticModal" onclick="closeModal(event, 'criticModal')">
+  <div class="modal-content">
+    <button class="modal-close-btn" onclick="document.getElementById('criticModal').style.display='none'">&times;</button>
+    <h3><i class="ri-customer-service-2-line" style="color: #60a5fa;"></i> Critic & Help</h3>
+    <ul class="modal-info-list">
+      <li><b>CP1 (Abed):</b> +62 818 0509 5050</li>
+      <li><b>CP2 (Zora):</b> +62 813 3009 8651</li>
+    </ul>
+  </div>
+</div>
+
+<div class="modal-overlay" id="creditModal" onclick="closeModal(event, 'creditModal')">
+  <div class="modal-content">
+    <button class="modal-close-btn" onclick="document.getElementById('creditModal').style.display='none'">&times;</button>
+    <h3><i class="ri-award-line" style="color: #facc15;"></i> System Credit</h3>
+    <ul class="modal-info-list">
+      <li><b>Designer:</b> Abed & Zora</li>
+      <li><b>Developer:</b> Abed & Zora</li>
+    </ul>
+  </div>
+</div>
+
+<div class="modal-overlay" id="donateModal" onclick="closeModal(event, 'donateModal')">
+  <div class="modal-content">
+    <button class="modal-close-btn" onclick="document.getElementById('donateModal').style.display='none'">&times;</button>
+    <h3><i class="ri-heart-3-line" style="color: #ef4444;"></i> Support / Donate</h3>
+    <ul class="modal-info-list">
+      <li><b>OVO:</b> 081805095050</li>
+      <li><b>DANA:</b> 081330098651</li>
+      <li><b>ShopeePay:</b> 081805095050</li>
+      <li><b>Gopay:</b> 081805095050</li>
+    </ul>
+  </div>
+</div>
+
 
 <script>
 let editId = null;
+let accounts = JSON.parse(localStorage.getItem("accounts")) || [];
 let currentUser = null;
-let tasks = {};
-let checkedTasks = {};
 
-// SINKRONISASI ALAMAT IP SERVER UTAMA
-// Ganti "localhost" menjadi IP Address komputer server Anda jika ingin dicoba lintas perangkat.
-const API_URL = "http://localhost:3000/api";
+let tasks = JSON.parse(localStorage.getItem("tasks")) || {};
+if (typeof tasks !== "object" || tasks === null) {
+  tasks = {};
+}
 
+let checkedTasks = JSON.parse(localStorage.getItem("checkedTasks")) || {};
+
+function generateRandomPassword() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; 
+  let password = "";
+  for (let i = 0; i < 6; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
+
+function initTeacherTasks(){
+  if(!currentUser) return;
+  if(currentUser.role === "teacher"){
+    if(!tasks[currentUser.username]){
+      tasks[currentUser.username] = [];
+    }
+  }
+}
+
+// ================= MODAL HANDLER FUNCTION =================
+function openModal(id) {
+  document.getElementById(id).style.display = "flex";
+}
+
+function closeModal(event, id) {
+  if(event.target === document.getElementById(id)) {
+    document.getElementById(id).style.display = "none";
+  }
+}
+
+// ================= SWITCH TABS (NAV BAR UTAMA) =================
 function switchTab(target) {
   const profileSection = document.getElementById("profileSection");
   const classSection = document.getElementById("classSection");
@@ -423,44 +794,38 @@ function switchTab(target) {
     profileSection.style.display = "block";
     classSection.style.display = "none";
     navItems[0].classList.add("active");
-    updateChart();
   } else if (target === 'class') {
     profileSection.style.display = "none";
     classSection.style.display = "block";
     navItems[1].classList.add("active");
-    fetchAndLoadTasks();
+    updateChart();
   }
 }
 
+// ================= SWITCH FORM AUTH + TOGGLE NAVBAR =================
 function switchForm(){
   const loginForm = document.getElementById("loginForm");
   const registerForm = document.getElementById("registerForm");
   const title = document.getElementById("formTitle");
+  const authBottomNav = document.getElementById("authBottomNav");
 
   if(loginForm.style.display !== "none"){
+    // Beralih ke halaman SIGN UP (Register)
     loginForm.style.display = "none";
     registerForm.style.display = "block";
     title.innerText = "Sign Up";
+    authBottomNav.style.display = "none"; // Sembunyikan bar nav di halaman signup
   } else {
+    // Beralih ke halaman SIGN IN (Login)
     loginForm.style.display = "block";
     registerForm.style.display = "none";
     title.innerText = "Sign In";
+    authBottomNav.style.display = "flex"; // Tampilkan kembali bar nav di halaman signin
   }
 }
 
-async function fetchAndLoadTasks() {
-  try {
-    const response = await fetch(`${API_URL}/tasks`);
-    const data = await response.json();
-    tasks = data.tasks;
-    checkedTasks = data.checkedTasks;
-    renderTasksList();
-  } catch (error) {
-    console.error("Gagal sinkronisasi data dari server", error);
-  }
-}
-
-async function register(){
+// ================= REGISTER =================
+function register(){
   const fullName = document.getElementById("fullName").value;
   const username = document.getElementById("username").value;
   const email = document.getElementById("email").value;
@@ -472,83 +837,116 @@ async function register(){
     alert("Semua data harus diisi!");
     return;
   }
+
   if(password !== confirmPassword){
     alert("Password tidak sama!");
     return;
   }
 
-  try {
-    const res = await fetch(`${API_URL}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fullName, username, email, password, role })
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.message);
-
-    alert("Register berhasil! Silakan login.");
-    switchForm();
-    document.getElementById("loginUser").value = username;
-    document.getElementById("loginPass").value = password;
-  } catch (err) {
-    alert(err.message);
+  const exist = accounts.find(acc => acc.username === username || acc.email === email);
+  if(exist){
+    alert("Username atau email sudah digunakan!");
+    return;
   }
+
+  const user = { fullName, username, email, password, role };
+  accounts.push(user);
+  localStorage.setItem("accounts", JSON.stringify(accounts));
+
+  alert("Register berhasil! Silakan login.");
+  switchForm();
+
+  document.getElementById("loginUser").value = username;
+  document.getElementById("loginPass").value = password;
 }
 
-async function login(){
+// ================= LOGIN =================
+function login(){
   const loginUser = document.getElementById("loginUser").value;
   const loginPass = document.getElementById("loginPass").value;
 
-  try {
-    const res = await fetch(`${API_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loginUser, loginPass })
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.message);
+  const foundUser = accounts.find(acc =>
+    (acc.username === loginUser || acc.email === loginUser) && acc.password === loginPass
+  );
 
-    currentUser = data.user;
-
-    document.getElementById("authBox").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-    document.getElementById("bottomNav").style.display = "flex"; 
-
-    switchTab('profile');
-
-    document.getElementById("profileName").innerText = currentUser.fullName;
-    document.getElementById("profileUsername").innerText = currentUser.username;
-    document.getElementById("profileEmail").innerText = currentUser.email;
-
-    if(currentUser.role === "student"){
-      document.getElementById("studentPanel").style.display = "block";
-      document.getElementById("teacherPanel").style.display = "none";
-      document.getElementById("dashboardTitle").innerText = "Dashboard Siswa";
-      document.getElementById("profileRole").innerText = "Siswa";
-      document.getElementById("classRow").style.display = "block";
-    } else {
-      document.getElementById("studentPanel").style.display = "none";
-      document.getElementById("teacherPanel").style.display = "block";
-      document.getElementById("dashboardTitle").innerText = "Dashboard Guru";
-      document.getElementById("profileRole").innerText = "Guru";
-      document.getElementById("classRow").style.display = "none";
-    }
-    
-    fetchAndLoadTasks();
-  } catch (err) {
-    alert(err.message);
+  if(!foundUser){
+    alert("Akun tidak ditemukan atau password salah!");
+    return;
   }
+
+  currentUser = foundUser;
+  initTeacherTasks();
+
+  document.getElementById("authBox").style.display = "none";
+  document.getElementById("authBottomNav").style.display = "none"; // Sembunyikan Navigasi Auth
+  document.getElementById("dashboard").style.display = "block";
+  document.getElementById("bottomNav").style.display = "flex"; // Tampilkan Navigasi Utama Dashboard
+
+  switchTab('profile');
+
+  document.getElementById("profileName").innerText = foundUser.fullName;
+  document.getElementById("profileUsername").innerText = foundUser.username;
+  document.getElementById("profileEmail").innerText = foundUser.email;
+
+  if(foundUser.role === "student"){
+    document.getElementById("studentPanel").style.display = "block";
+    document.getElementById("teacherPanel").style.display = "none";
+    document.getElementById("dashboardTitle").innerText = "Dashboard Siswa";
+    document.getElementById("profileRole").innerText = "Siswa";
+    document.getElementById("classRow").style.display = "block";
+    
+    const savedPhoto = localStorage.getItem("profileImage_student_" + foundUser.username);
+    document.getElementById("profileImage").src = savedPhoto ? savedPhoto : "https://via.placeholder.com/150";
+  } else {
+    document.getElementById("studentPanel").style.display = "none";
+    document.getElementById("teacherPanel").style.display = "block";
+    document.getElementById("dashboardTitle").innerText = "Dashboard Guru";
+    document.getElementById("profileRole").innerText = "Guru";
+    document.getElementById("classRow").style.display = "none";
+
+    const savedPhoto = localStorage.getItem("profileImage_teacher_" + foundUser.username);
+    document.getElementById("profileImage").src = savedPhoto ? savedPhoto : "https://via.placeholder.com/150";
+  }
+  
+  loadTasks();
 }
 
+// ================= LOGOUT =================
 function logout(){
   currentUser = null;
   editId = null;
   document.getElementById("dashboard").style.display = "none";
   document.getElementById("bottomNav").style.display = "none"; 
   document.getElementById("authBox").style.display = "block";
+  document.getElementById("authBottomNav").style.display = "flex"; // Tampilkan kembali Navigasi Auth (karena kembali ke Sign In)
   document.getElementById("loginUser").value = "";
   document.getElementById("loginPass").value = "";
   resetTeacherForm();
+}
+
+// ================= FOTO PROFILE =================
+document.getElementById("photoInput").addEventListener("change", function(e){
+  const file = e.target.files[0];
+  if(file && currentUser){
+    const reader = new FileReader();
+    reader.onload = function(event){
+      const imageData = event.target.result;
+      document.getElementById("profileImage").src = imageData;
+      
+      const storageKey = "profileImage_" + currentUser.role + "_" + currentUser.username;
+      localStorage.setItem(storageKey, imageData);
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+function removePhoto() {
+  if (currentUser) {
+    document.getElementById("profileImage").src = "https://via.placeholder.com/150";
+    const storageKey = "profileImage_" + currentUser.role + "_" + currentUser.username;
+    localStorage.removeItem(storageKey);
+    document.getElementById("photoInput").value = "";
+  }
 }
 
 function toggleSubject(id){
@@ -556,42 +954,57 @@ function toggleSubject(id){
   taskContainer.style.display = (taskContainer.style.display === "block") ? "none" : "block";
 }
 
-async function verifyTaskPassword(taskId, teacherUsername) {
+// ================= VERIFIKASI PASSWORD TUGAS =================
+function verifyTaskPassword(taskId, teacherUsername) {
   if (!currentUser || currentUser.role !== "student") return;
 
   const inputElem = document.getElementById(`pass-input-${taskId}`);
-  const enteredPassword = inputElem.value.trim();
+  const enteredPassword = inputElem.value.trim().toUpperCase();
 
   if (!enteredPassword) {
-    alert("Masukkan token validasi dari guru terlebih dahulu!");
+    alert("Masukkan password validasi terlebih dahulu!");
     return;
   }
 
-  try {
-    const res = await fetch(`${API_URL}/tasks/verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        taskId,
-        teacherUsername,
-        studentUsername: currentUser.username,
-        enteredPassword
-      })
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.message);
+  let targetTask = null;
+  if (tasks[teacherUsername]) {
+    targetTask = tasks[teacherUsername].find(t => t.id === taskId);
+  }
 
-    tasks = data.tasks;
-    checkedTasks = data.checkedTasks;
-    alert("🎉 Token Valid! Status tugas Anda berubah menjadi SELESAI.");
-    renderTasksList();
-  } catch (err) {
-    alert("❌ " + err.message);
+  if (!targetTask) {
+    alert("Data tugas tidak ditemukan!");
+    return;
+  }
+
+  if (targetTask.currentPassword === enteredPassword) {
+    const studentKey = currentUser.username;
+    if (!checkedTasks[studentKey]) {
+      checkedTasks[studentKey] = [];
+    }
+    
+    if (!checkedTasks[studentKey].includes(taskId)) {
+      checkedTasks[studentKey].push(taskId);
+    }
+    localStorage.setItem("checkedTasks", JSON.stringify(checkedTasks));
+
+    targetTask.currentPassword = generateRandomPassword();
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+
+    alert("🎉 Password Benar! Status tugas Anda berhasil diperbarui menjadi SELESAI.");
+    loadTasks();
+  } else {
+    alert("❌ Password salah atau sudah kedaluwarsa! Tanyakan password baru ke guru Anda.");
   }
 }
 
-async function addTask(){
-  if(!currentUser) return alert("Silakan login dulu!");
+// ================= TAMBAH & EDIT TUGAS GURU =================
+function addTask(){
+  if(!currentUser){
+    alert("Silakan login dulu!");
+    return;
+  }
+
+  initTeacherTasks();
 
   const subject = document.getElementById("subjectSelect").value;
   const taskText = document.getElementById("taskInput").value;
@@ -602,35 +1015,31 @@ async function addTask(){
     return;
   }
 
-  try {
-    let res, data;
-    if(editId !== null){
-      res = await fetch(`${API_URL}/tasks/edit`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editId, subject, taskText, deadline, teacherUsername: currentUser.username })
-      });
-      editId = null;
-    } else {
-      res = await fetch(`${API_URL}/tasks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, taskText, deadline, teacherUsername: currentUser.username })
-      });
-    }
+  const teacherKey = currentUser.username;
 
-    data = await res.json();
-    tasks = data.tasks;
-    checkedTasks = data.checkedTasks;
-
-    resetTeacherForm();
-    renderTasksList();
-  } catch (err) {
-    console.error(err);
+  if(editId !== null){
+    tasks[teacherKey] = tasks[teacherKey].map(t =>
+      t.id === editId ? { ...t, subject, task: taskText, deadline } : t
+    );
+    editId = null;
+  } else {
+    tasks[teacherKey].push({
+      id: Date.now(),
+      subject,
+      task: taskText,
+      deadline,
+      teacher: teacherKey,
+      currentPassword: generateRandomPassword()
+    });
   }
+
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  resetTeacherForm();
+  loadTasks();
 }
 
-function renderTasksList(){
+// ================= RENDER LIST TUGAS =================
+function loadTasks(){
   if(!currentUser) return;
 
   const teacherList = document.getElementById("teacherTaskList");
@@ -650,7 +1059,9 @@ function renderTasksList(){
   let allTasks = [];
   Object.keys(tasks).forEach(teacher => {
     if(Array.isArray(tasks[teacher])){
-      tasks[teacher].forEach(t => allTasks.push(t));
+      tasks[teacher].forEach(t => {
+        allTasks.push(t);
+      });
     }
   });
 
@@ -666,12 +1077,16 @@ function renderTasksList(){
         <p>📝 ${data.task}</p>
         <small>📅 Deadline: ${data.deadline}</small><br>
         <div style="margin-top: 5px;">
-          <small style="color: #a3a3a3;">🔑 Token Validasi Murid:</small><br>
-          <span class="password-badge">${data.currentPassword || 'KOSONG'}</span>
+          <small style="color: #60a5fa;">🔑 Token Akses Murid Saat Ini:</small><br>
+          <span class="password-badge">${data.currentPassword || 'TITIK-KOSONG'}</span>
         </div>
         <div style="margin-top:12px; display:flex; gap:10px;">
-          <button onclick="startEdit(${data.id})" style="background:#facc15; color:black; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">✏️ Edit</button>
-          <button onclick="deleteTask(${data.id})" style="background:#ef4444; color:white; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">🗑️ Hapus</button>
+          <button onclick="startEdit(${data.id})" style="background:#facc15; color:black; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
+            <i class="ri-edit-line"></i> Edit
+          </button>
+          <button onclick="deleteTask(${data.id})" style="background:#ef4444; color:white; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
+            <i class="ri-delete-bin-line"></i> Hapus
+          </button>
         </div>
       `;
       if(teacherList) teacherList.appendChild(card);
@@ -682,54 +1097,69 @@ function renderTasksList(){
     studentTaskCard.className = `glass-card student-task-item ${isCompleted ? 'completed' : ''}`;
     studentTaskCard.id = `student-task-${data.id}`;
     
-    let validationSectionHtml = isCompleted 
-      ? `<div style="margin-top:5px; color:#4ade80; font-size:12px; font-weight:600;">✔️ Terverifikasi Selesai</div>`
-      : `<div class="password-verif-box">
+    let validationSectionHtml = "";
+    if (!isCompleted) {
+      validationSectionHtml = `
+        <div class="password-verif-box">
           <input type="text" id="pass-input-${data.id}" placeholder="Kode Guru..." maxlength="6">
-          <button onclick="verifyTaskPassword(${data.id}, '${data.teacher}')">Kirim</button>
-         </div>`;
+          <button onclick="verifyTaskPassword(${data.id}, '${data.teacher}')">Centang</button>
+        </div>
+      `;
+    } else {
+      validationSectionHtml = `
+        <div style="margin-top:5px; color:#4ade80; font-size:12px; font-weight:600;">
+          <i class="ri-checkbox-circle-fill"></i> Selesai Terverifikasi (Terkunci)
+        </div>
+      `;
+    }
 
     studentTaskCard.innerHTML = `
       <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''} disabled style="cursor: not-allowed;">
       <div class="task-text-content">
         <h4>📝 ${data.task}</h4>
-        <p style="font-size:13px; opacity:0.8;">Mapel: ${data.subject} (Guru: @${data.teacher})</p>
+        <p style="font-size:13px; opacity:0.8;">Mapel: ${data.subject}</p>
         <small>📅 Deadline: ${data.deadline}</small>
         ${validationSectionHtml}
       </div>
     `;
 
-    if(data.subject === "Matematika" && mathBox) mathBox.appendChild(studentTaskCard);
-    else if(data.subject === "IPA" && scienceBox) scienceBox.appendChild(studentTaskCard);
-    else if(data.subject === "Bahasa Indonesia" && indoBox) indoBox.appendChild(studentTaskCard);
-    else if(data.subject === "Bahasa Inggris" && englishBox) englishBox.appendChild(studentTaskCard);
-    else if(data.subject === "Sejarah" && historyBox) historyBox.appendChild(studentTaskCard);
+    if(data.subject === "Matematika" && mathBox){
+      mathBox.appendChild(studentTaskCard);
+    } else if(data.subject === "IPA" && scienceBox){
+      scienceBox.appendChild(studentTaskCard);
+    } else if(data.subject === "Bahasa Indonesia" && indoBox){
+      indoBox.appendChild(studentTaskCard);
+    } else if(data.subject === "Bahasa Inggris" && englishBox){
+      englishBox.appendChild(studentTaskCard);
+    } else if(data.subject === "Sejarah" && historyBox){
+      historyBox.appendChild(studentTaskCard);
+    }
   });
 
   updateChart();
 }
 
-async function deleteTask(id){
+// ================= HAPUS TUGAS GURU =================
+function deleteTask(id){
   if(!currentUser) return;
   if(confirm("Apakah Anda yakin ingin menghapus tugas ini?")){
-    try {
-      const res = await fetch(`${API_URL}/tasks/${currentUser.username}/${id}`, { method: "DELETE" });
-      const data = await res.json();
-      tasks = data.tasks;
-      checkedTasks = data.checkedTasks;
-      renderTasksList();
-    } catch (err) {
-      console.error(err);
-    }
+    const teacherKey = currentUser.username;
+    tasks[teacherKey] = (tasks[teacherKey] || []).filter(t => t.id !== id);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    loadTasks();
   }
 }
 
+// ================= AMBIL DATA KE FORM UNTUK EDIT =================
 function startEdit(id){
   if(!currentUser) return;
-  const task = (tasks[currentUser.username] || []).find(t => t.id === id);
+  const teacherKey = currentUser.username;
+  const task = (tasks[teacherKey] || []).find(t => t.id === id);
+
   if(!task) return;
 
   editId = id;
+  
   document.getElementById("subjectSelect").value = task.subject;
   document.getElementById("taskInput").value = task.task;
   document.getElementById("deadlineInput").value = task.deadline;
@@ -737,34 +1167,62 @@ function startEdit(id){
   const formTitle = document.querySelector(".teacher-form h3");
   const actionBtn = document.querySelector(".teacher-form button");
   
-  if(formTitle) formTitle.innerHTML = `<span style="color: #facc15;">✏️ Mode Edit Tugas</span>`;
+  if(formTitle) formTitle.innerHTML = `<span style="color: #facc15;"><i class="ri-edit-box-line"></i> Mode Edit: Mengubah Tugas</span>`;
   if(actionBtn) {
-    actionBtn.innerText = "✏️ Simpan Perubahan";
+    actionBtn.innerText = "✏️ Simpan Perubahan Tugas";
     actionBtn.style.background = "linear-gradient(to right, #facc15, #eab308)";
     actionBtn.style.color = "black";
   }
+
+  if(!document.getElementById("cancelEditBtn")){
+    const cancelBtn = document.createElement("button");
+    cancelBtn.id = "cancelEditBtn";
+    cancelBtn.type = "button";
+    cancelBtn.innerText = "❌ Batal Mengedit";
+    cancelBtn.style.background = "rgba(255,255,255,0.15)";
+    cancelBtn.style.marginTop = "10px";
+    cancelBtn.onclick = resetTeacherForm;
+    actionBtn.parentNode.insertBefore(cancelBtn, actionBtn.nextSibling);
+  }
+  
+  document.getElementById("subjectSelect").scrollIntoView({ behavior: 'smooth' });
 }
 
+// ================= FUNGSI RESET FORM & UI GURU =================
 function resetTeacherForm(){
   editId = null;
-  if(document.getElementById("subjectSelect")) document.getElementById("subjectSelect").value = "";
-  if(document.getElementById("taskInput")) document.getElementById("taskInput").value = "";
-  if(document.getElementById("deadlineInput")) document.getElementById("deadlineInput").value = "";
+  
+  const subjectSelect = document.getElementById("subjectSelect");
+  const taskInput = document.getElementById("taskInput");
+  const deadlineInput = document.getElementById("deadlineInput");
+
+  if(subjectSelect) subjectSelect.value = "";
+  if(taskInput) taskInput.value = "";
+  if(deadlineInput) deadlineInput.value = "";
   
   const formTitle = document.querySelector(".teacher-form h3");
   const actionBtn = document.querySelector(".teacher-form button");
-  if(formTitle) formTitle.innerHTML = "➕ Tambah Tugas Baru";
+  
+  if(formTitle) formTitle.innerHTML = "➕ Tambah Tugas";
   if(actionBtn) {
     actionBtn.innerText = "Tambahkan Tugas";
-    actionBtn.style.background = "linear-gradient(to right, #374151, #1f2937)";
+    actionBtn.style.background = "rgba(255, 255, 255, 0.25)";
     actionBtn.style.color = "white";
   }
+
+  const cancelBtn = document.getElementById("cancelEditBtn");
+  if(cancelBtn) cancelBtn.remove();
 }
 
+// ================= UPDATE GRAFIK BATANG =================
 function updateChart(){
   const dates = {
-    "25 Mei 2026": 0, "26 Mei 2026": 0, "27 Mei 2026": 0,
-    "28 Mei 2026": 0, "29 Mei 2026": 0, "30 Mei 2026": 0
+    "25 Mei 2026": 0,
+    "26 Mei 2026": 0,
+    "27 Mei 2026": 0,
+    "28 Mei 2026": 0,
+    "29 Mei 2026": 0,
+    "30 Mei 2026": 0
   };
 
   const studentKey = currentUser ? currentUser.username : "";
@@ -783,10 +1241,11 @@ function updateChart(){
   const bars = document.querySelectorAll(".bar");
   Object.values(dates).forEach((total, i) => {
     if(!bars[i]) return;
-    bars[i].style.height = (total * 30) + "px";
+    bars[i].style.height = (total * 35) + "px";
     bars[i].querySelector("span").innerText = total;
   });
 }
 </script>
+
 </body>
 </html>
