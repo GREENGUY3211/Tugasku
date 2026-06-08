@@ -1,24 +1,416 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tugasku - Secure Task Management</title>
+
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Poppins',sans-serif;
+}
+
+body {
+  min-height:100vh;
+  background: radial-gradient(circle at 20% 30%, #202b36 0%, #111823 100%);
+  color:#f3f4f6;
+  padding-bottom:80px;
+}
+
+.container{
+  max-width:500px;
+  margin:0 auto;
+  padding:20px;
+}
+
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:25px;
+}
+
+.logo-section h1 {
+  font-size:24px;
+  background:linear-gradient(to right, #ffffff, #9ca3af);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.glass-card{
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius:20px;
+  padding:20px;
+  margin-bottom:20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+input, select, textarea{
+  width:100%;
+  padding:14px;
+  background:rgba(15, 23, 42, 0.6);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;
+  color:white;
+  margin-bottom:15px;
+  font-size:14px;
+  outline:none;
+}
+
+input:focus, select:focus, textarea:focus{
+  border-color: #9ca3af;
+}
+
+button{
+  width:100%;
+  padding:14px;
+  background:linear-gradient(to right, #374151, #1f2937);
+  border:1px solid rgba(255,255,255,0.1);
+  color:white;
+  border-radius:12px;
+  font-weight:600;
+  cursor:pointer;
+  margin-bottom:10px;
+  transition: 0.3s;
+}
+
+button:hover{
+  opacity:0.9;
+  transform: translateY(-1px);
+}
+
+/* Auth Navigation Toggle */
+.auth-nav {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 15px;
+  font-size: 14px;
+}
+.auth-nav span {
+  color: #9ca3af;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Bottom Bar Navigation */
+#bottomNav {
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:100%;
+  max-width:500px;
+  background:rgba(17, 24, 39, 0.85);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  display:flex;
+  justify-content:space-around;
+  padding:12px 0;
+  border-top:1px solid rgba(255,255,255,0.08);
+  z-index:999;
+}
+
+.nav-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  color:#6b7280;
+  font-size:12px;
+  cursor:pointer;
+  text-decoration:none;
+}
+
+.nav-item i{
+  font-size:22px;
+  margin-bottom:2px;
+}
+
+.nav-item.active{
+  color:#ffffff;
+}
+
+/* Subject accordion */
+.subject-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px;
+  background:rgba(255,255,255,0.03);
+  border-radius:14px;
+  margin-bottom:10px;
+  cursor:pointer;
+}
+
+.task-container {
+  display:none;
+  padding:5px 0 10px 0;
+}
+
+/* Task Layout */
+.student-task-item {
+  display:flex;
+  gap:15px;
+  align-items:flex-start;
+  padding:15px;
+  margin-top:10px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.student-task-item.completed {
+  border-left: 4px solid #4ade80;
+  opacity: 0.8;
+}
+
+.task-checkbox {
+  width:20px;
+  height:20px;
+  margin-top:3px;
+}
+
+.task-text-content h4 {
+  font-size:15px;
+  margin-bottom:3px;
+}
+
+.password-verif-box {
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+
+.password-verif-box input {
+  margin:0;
+  padding:8px;
+  text-transform: uppercase;
+  text-align: center;
+  font-weight: bold;
+}
+
+.password-verif-box button {
+  margin:0;
+  padding:8px 15px;
+  width:auto;
+  background: #374151;
+}
+
+/* Teacher Styles */
+.teacher-form h3 {
+  margin-bottom:15px;
+  font-size:18px;
+}
+
+.teacher-card {
+  background:rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding:15px;
+  border-radius:14px;
+  margin-bottom:15px;
+}
+
+.password-badge {
+  display:inline-block;
+  background:rgba(255,255,255,0.1);
+  padding:4px 10px;
+  border-radius:6px;
+  font-family:monospace;
+  font-size:16px;
+  font-weight:bold;
+  letter-spacing:1px;
+  color:#facc15;
+  margin-top:5px;
+}
+
+/* Chart Styles */
+.chart-container {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  height:150px;
+  padding:10px 20px;
+  background:rgba(0,0,0,0.2);
+  border-radius:14px;
+  margin-top:15px;
+}
+
+.bar-wrapper {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+
+.bar {
+  width:25px;
+  background:linear-gradient(to top, #4b5563, #9ca3af);
+  border-radius:6px 6px 0 0;
+  height:0px;
+  transition:height 0.5s ease;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+.bar span {
+  font-size:10px;
+  margin-top:-18px;
+  font-weight:600;
+}
+
+.bar-label {
+  font-size:10px;
+  color:#9ca3af;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  
+  <div id="authBox" class="glass-card" style="margin-top:40px;">
+    <h2 id="formTitle" style="text-align:center; margin-bottom:20px;">Sign In</h2>
+    
+    <div id="loginForm">
+      <input type="text" id="loginUser" placeholder="Username atau Email">
+      <input type="password" id="loginPass" placeholder="Password">
+      <button onclick="login()">Masuk Aplikasi</button>
+      <div class="auth-nav">Belum punya akun? <span onclick="switchForm()">Daftar Sekarang</span></div>
+    </div>
+
+    <div id="registerForm" style="display:none;">
+      <input type="text" id="fullName" placeholder="Nama Lengkap">
+      <input type="text" id="username" placeholder="Buat Username">
+      <input type="email" id="email" placeholder="Email Aktif">
+      <input type="password" id="password" placeholder="Password">
+      <input type="password" id="confirmPassword" placeholder="Konfirmasi Password">
+      <select id="role">
+        <option value="student">Saya adalah Siswa</option>
+        <option value="teacher">Saya adalah Guru</option>
+      </select>
+      <button onclick="register()">Buat Akun Baru</button>
+      <div class="auth-nav">Sudah memiliki akun? <span onclick="switchForm()">Masuk</span></div>
+    </div>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <header>
+      <div class="logo-section">
+        <h1 id="dashboardTitle">Tugasku</h1>
+        <p style="font-size:12px; color:#9ca3af;">Secure Task Manager</p>
+      </div>
+      <button onclick="logout()" style="width:auto; padding:8px 15px; margin:0; background:#ef4444; border:none; border-radius:10px; font-size:13px;">Keluar</button>
+    </header>
+
+    <div id="profileSection">
+      <div class="glass-card" style="text-align:center; padding:30px 20px;">
+        <div style="width:80px; height:80px; background:rgba(255,255,255,0.1); border-radius:50%; margin:0 auto 15px auto; display:flex; align-items:center; justify-content:center;">
+          <i class="ri-user-3-fill" style="font-size:40px; color:#9ca3af;"></i>
+        </div>
+        <h2 id="profileName">-</h2>
+        <p style="color:#9ca3af; font-size:14px; margin-bottom:5px;">@<span id="profileUsername">username</span></p>
+        <span id="profileRole" style="background:rgba(255,255,255,0.1); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; color:#cbd5e1;">-</span>
+        
+        <div style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px; font-size:14px; text-align:left; color:#9ca3af;">
+          <p><i class="ri-mail-line"></i> <span id="profileEmail">-</span></p>
+        </div>
+      </div>
+
+      <div class="glass-card" id="classRow">
+        <h3 style="font-size:16px; margin-bottom:5px;"><i class="ri-bar-chart-box-line"></i> Pantauan Beban Tugas</h3>
+        <p style="font-size:12px; color:#9ca3af; margin-bottom:15px;">Jumlah tugas belum selesai sesuai tanggal jatuh tempo.</p>
+        <div class="chart-container">
+          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">25 Mei</div></div>
+          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">26 Mei</div></div>
+          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">27 Mei</div></div>
+          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">28 Mei</div></div>
+          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">29 Mei</div></div>
+          <div class="bar-wrapper"><div class="bar" style="height:0px;"><span>0</span></div><div class="bar-label">30 Mei</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="classSection" style="display:none;">
+      
+      <div id="studentPanel">
+        <div class="glass-card">
+          <h3 style="margin-bottom:15px; font-size:16px;">📚 Ruang Mata Pelajaran</h3>
+          
+          <div class="subject-row" onclick="toggleSubject('mathTask')"><span>Matematika</span><i class="ri-arrow-down-s-line"></i></div>
+          <div class="task-container" id="mathTask"></div>
+
+          <div class="subject-row" onclick="toggleSubject('scienceTask')"><span>IPA</span><i class="ri-arrow-down-s-line"></i></div>
+          <div class="task-container" id="scienceTask"></div>
+
+          <div class="subject-row" onclick="toggleSubject('indoTask')"><span>Bahasa Indonesia</span><i class="ri-arrow-down-s-line"></i></div>
+          <div class="task-container" id="indoTask"></div>
+
+          <div class="subject-row" onclick="toggleSubject('englishTask')"><span>Bahasa Inggris</span><i class="ri-arrow-down-s-line"></i></div>
+          <div class="task-container" id="englishTask"></div>
+
+          <div class="subject-row" onclick="toggleSubject('historyTask')"><span>Sejarah</span><i class="ri-arrow-down-s-line"></i></div>
+          <div class="task-container" id="historyTask"></div>
+        </div>
+      </div>
+
+      <div id="teacherPanel" style="display:none;">
+        <div class="glass-card teacher-form">
+          <h3>➕ Tambah Tugas Baru</h3>
+          <select id="subjectSelect">
+            <option value="">-- Pilih Mata Pelajaran --</option>
+            <option value="Matematika">Matematika</option>
+            <option value="IPA">IPA</option>
+            <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+            <option value="Bahasa Inggris">Bahasa Inggris</option>
+            <option value="Sejarah">Sejarah</option>
+          </select>
+          <textarea id="taskInput" placeholder="Ketik rincian tugas di sini..." rows="3"></textarea>
+          <select id="deadlineInput">
+            <option value="">-- Pilih Batas Waktu --</option>
+            <option value="25 Mei 2026">25 Mei 2026</option>
+            <option value="26 Mei 2026">26 Mei 2026</option>
+            <option value="27 Mei 2026">27 Mei 2026</option>
+            <option value="28 Mei 2026">28 Mei 2026</option>
+            <option value="29 Mei 2026">29 Mei 2026</option>
+            <option value="30 Mei 2026">30 Mei 2026</option>
+          </select>
+          <button onclick="addTask()">Tambahkan Tugas</button>
+        </div>
+
+        <div class="glass-card">
+          <h3 style="margin-bottom:15px; font-size:16px;">📋 Daftar Tugas yang Anda Berikan</h3>
+          <div id="teacherTaskList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="bottomNav" style="display:none;">
+    <div class="nav-item active" onclick="switchTab('profile')"><i class="ri-user-smile-line"></i>Profil</div>
+    <div class="nav-item" onclick="switchTab('class')"><i class="ri-book-open-line"></i>Kelas</div>
+  </div>
+
+</div>
+
 <script>
 let editId = null;
 let currentUser = null;
 let tasks = {};
 let checkedTasks = {};
 
-// URL Server Backend Node.js
-const API_URL = "http://192.168.1.15:3000/api";
+// SINKRONISASI ALAMAT IP SERVER UTAMA
+// Ganti "localhost" menjadi IP Address komputer server Anda jika ingin dicoba lintas perangkat.
+const API_URL = "http://localhost:3000/api";
 
-// ================= MODAL HANDLER FUNCTION =================
-function openModal(id) {
-  document.getElementById(id).style.display = "flex";
-}
-
-function closeModal(event, id) {
-  if(event.target === document.getElementById(id)) {
-    document.getElementById(id).style.display = "none";
-  }
-}
-
-// ================= SWITCH TABS =================
 function switchTab(target) {
   const profileSection = document.getElementById("profileSection");
   const classSection = document.getElementById("classSection");
@@ -31,11 +423,12 @@ function switchTab(target) {
     profileSection.style.display = "block";
     classSection.style.display = "none";
     navItems[0].classList.add("active");
+    updateChart();
   } else if (target === 'class') {
     profileSection.style.display = "none";
     classSection.style.display = "block";
     navItems[1].classList.add("active");
-    fetchAndLoadTasks(); // Ambil data segar dari server saat buka tab kelas
+    fetchAndLoadTasks();
   }
 }
 
@@ -43,22 +436,18 @@ function switchForm(){
   const loginForm = document.getElementById("loginForm");
   const registerForm = document.getElementById("registerForm");
   const title = document.getElementById("formTitle");
-  const authBottomNav = document.getElementById("authBottomNav");
 
   if(loginForm.style.display !== "none"){
     loginForm.style.display = "none";
     registerForm.style.display = "block";
     title.innerText = "Sign Up";
-    authBottomNav.style.display = "none";
   } else {
     loginForm.style.display = "block";
     registerForm.style.display = "none";
     title.innerText = "Sign In";
-    authBottomNav.style.display = "flex";
   }
 }
 
-// ================= SYNC SERVER DATA =================
 async function fetchAndLoadTasks() {
   try {
     const response = await fetch(`${API_URL}/tasks`);
@@ -71,7 +460,6 @@ async function fetchAndLoadTasks() {
   }
 }
 
-// ================= REGISTER =================
 async function register(){
   const fullName = document.getElementById("fullName").value;
   const username = document.getElementById("username").value;
@@ -107,7 +495,6 @@ async function register(){
   }
 }
 
-// ================= LOGIN =================
 async function login(){
   const loginUser = document.getElementById("loginUser").value;
   const loginPass = document.getElementById("loginPass").value;
@@ -124,7 +511,6 @@ async function login(){
     currentUser = data.user;
 
     document.getElementById("authBox").style.display = "none";
-    document.getElementById("authBottomNav").style.display = "none"; 
     document.getElementById("dashboard").style.display = "block";
     document.getElementById("bottomNav").style.display = "flex"; 
 
@@ -154,14 +540,12 @@ async function login(){
   }
 }
 
-// ================= LOGOUT =================
 function logout(){
   currentUser = null;
   editId = null;
   document.getElementById("dashboard").style.display = "none";
   document.getElementById("bottomNav").style.display = "none"; 
   document.getElementById("authBox").style.display = "block";
-  document.getElementById("authBottomNav").style.display = "flex"; 
   document.getElementById("loginUser").value = "";
   document.getElementById("loginPass").value = "";
   resetTeacherForm();
@@ -172,7 +556,6 @@ function toggleSubject(id){
   taskContainer.style.display = (taskContainer.style.display === "block") ? "none" : "block";
 }
 
-// ================= VERIFIKASI PASSWORD TUGAS =================
 async function verifyTaskPassword(taskId, teacherUsername) {
   if (!currentUser || currentUser.role !== "student") return;
 
@@ -180,7 +563,7 @@ async function verifyTaskPassword(taskId, teacherUsername) {
   const enteredPassword = inputElem.value.trim();
 
   if (!enteredPassword) {
-    alert("Masukkan password validasi terlebih dahulu!");
+    alert("Masukkan token validasi dari guru terlebih dahulu!");
     return;
   }
 
@@ -200,14 +583,13 @@ async function verifyTaskPassword(taskId, teacherUsername) {
 
     tasks = data.tasks;
     checkedTasks = data.checkedTasks;
-    alert("🎉 Token Benar! Status tugas berhasil diperbarui menjadi SELESAI.");
+    alert("🎉 Token Valid! Status tugas Anda berubah menjadi SELESAI.");
     renderTasksList();
   } catch (err) {
     alert("❌ " + err.message);
   }
 }
 
-// ================= TAMBAH & EDIT TUGAS GURU =================
 async function addTask(){
   if(!currentUser) return alert("Silakan login dulu!");
 
@@ -223,7 +605,6 @@ async function addTask(){
   try {
     let res, data;
     if(editId !== null){
-      // Skenario Edit Tugas
       res = await fetch(`${API_URL}/tasks/edit`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -231,7 +612,6 @@ async function addTask(){
       });
       editId = null;
     } else {
-      // Skenario Tambah Tugas Baru
       res = await fetch(`${API_URL}/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -250,7 +630,6 @@ async function addTask(){
   }
 }
 
-// ================= RENDER LIST TUGAS KE UI =================
 function renderTasksList(){
   if(!currentUser) return;
 
@@ -287,8 +666,8 @@ function renderTasksList(){
         <p>📝 ${data.task}</p>
         <small>📅 Deadline: ${data.deadline}</small><br>
         <div style="margin-top: 5px;">
-          <small style="color: #60a5fa;">🔑 Token Akses Murid Saat Ini:</small><br>
-          <span class="password-badge">${data.currentPassword || 'TITIK-KOSONG'}</span>
+          <small style="color: #a3a3a3;">🔑 Token Validasi Murid:</small><br>
+          <span class="password-badge">${data.currentPassword || 'KOSONG'}</span>
         </div>
         <div style="margin-top:12px; display:flex; gap:10px;">
           <button onclick="startEdit(${data.id})" style="background:#facc15; color:black; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">✏️ Edit</button>
@@ -304,17 +683,17 @@ function renderTasksList(){
     studentTaskCard.id = `student-task-${data.id}`;
     
     let validationSectionHtml = isCompleted 
-      ? `<div style="margin-top:5px; color:#4ade80; font-size:12px; font-weight:600;">✔️ Selesai Terverifikasi</div>`
+      ? `<div style="margin-top:5px; color:#4ade80; font-size:12px; font-weight:600;">✔️ Terverifikasi Selesai</div>`
       : `<div class="password-verif-box">
           <input type="text" id="pass-input-${data.id}" placeholder="Kode Guru..." maxlength="6">
-          <button onclick="verifyTaskPassword(${data.id}, '${data.teacher}')">Centang</button>
+          <button onclick="verifyTaskPassword(${data.id}, '${data.teacher}')">Kirim</button>
          </div>`;
 
     studentTaskCard.innerHTML = `
       <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''} disabled style="cursor: not-allowed;">
       <div class="task-text-content">
         <h4>📝 ${data.task}</h4>
-        <p style="font-size:13px; opacity:0.8;">Mapel: ${data.subject} (Oleh: ${data.teacher})</p>
+        <p style="font-size:13px; opacity:0.8;">Mapel: ${data.subject} (Guru: @${data.teacher})</p>
         <small>📅 Deadline: ${data.deadline}</small>
         ${validationSectionHtml}
       </div>
@@ -330,7 +709,6 @@ function renderTasksList(){
   updateChart();
 }
 
-// ================= HAPUS TUGAS GURU =================
 async function deleteTask(id){
   if(!currentUser) return;
   if(confirm("Apakah Anda yakin ingin menghapus tugas ini?")){
@@ -346,7 +724,6 @@ async function deleteTask(id){
   }
 }
 
-// ================= AMBIL DATA KE FORM UNTUK EDIT =================
 function startEdit(id){
   if(!currentUser) return;
   const task = (tasks[currentUser.username] || []).find(t => t.id === id);
@@ -360,13 +737,12 @@ function startEdit(id){
   const formTitle = document.querySelector(".teacher-form h3");
   const actionBtn = document.querySelector(".teacher-form button");
   
-  if(formTitle) formTitle.innerHTML = `<span style="color: #facc15;">📝 Mode Edit Tugas</span>`;
+  if(formTitle) formTitle.innerHTML = `<span style="color: #facc15;">✏️ Mode Edit Tugas</span>`;
   if(actionBtn) {
     actionBtn.innerText = "✏️ Simpan Perubahan";
     actionBtn.style.background = "linear-gradient(to right, #facc15, #eab308)";
     actionBtn.style.color = "black";
   }
-  document.getElementById("subjectSelect").scrollIntoView({ behavior: 'smooth' });
 }
 
 function resetTeacherForm(){
@@ -377,15 +753,14 @@ function resetTeacherForm(){
   
   const formTitle = document.querySelector(".teacher-form h3");
   const actionBtn = document.querySelector(".teacher-form button");
-  if(formTitle) formTitle.innerHTML = "➕ Tambah Tugas";
+  if(formTitle) formTitle.innerHTML = "➕ Tambah Tugas Baru";
   if(actionBtn) {
     actionBtn.innerText = "Tambahkan Tugas";
-    actionBtn.style.background = "rgba(255, 255, 255, 0.25)";
+    actionBtn.style.background = "linear-gradient(to right, #374151, #1f2937)";
     actionBtn.style.color = "white";
   }
 }
 
-// ================= UPDATE GRAFIK BATANG =================
 function updateChart(){
   const dates = {
     "25 Mei 2026": 0, "26 Mei 2026": 0, "27 Mei 2026": 0,
@@ -408,8 +783,10 @@ function updateChart(){
   const bars = document.querySelectorAll(".bar");
   Object.values(dates).forEach((total, i) => {
     if(!bars[i]) return;
-    bars[i].style.height = (total * 35) + "px";
+    bars[i].style.height = (total * 30) + "px";
     bars[i].querySelector("span").innerText = total;
   });
 }
 </script>
+</body>
+</html>
