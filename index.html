@@ -90,6 +90,9 @@
         document.getElementById("authBottomNav").style.display = "none";
         document.getElementById("dashboard").style.display = "block";
         document.getElementById("bottomNav").style.display = "flex";
+        // Reset tombol login agar tidak tertinggal disabled
+        const loginBtnReset = document.querySelector("#loginForm button[type='button']");
+        if (loginBtnReset) { loginBtnReset.innerText = "Login"; loginBtnReset.disabled = false; }
         switchTab('profile');
         document.getElementById("profileName").innerText = currentUser.fullName;
         document.getElementById("profileUsername").innerText = currentUser.username;
@@ -739,7 +742,7 @@ button:hover{
         <p><b>Username:</b> <span id="profileUsername"></span></p>
         <p><b>Email:</b> <span id="profileEmail"></span></p>
         <p><b>Role:</b> <span id="profileRole"></span></p>
-        <p id="classRow"><b>Kelas:</b> <span id="profileClass">-</span></p>
+        <p id="classRow" style="display:none;"><b>Kelas:</b> <span id="profileClass">-</span></p>
       </div>
     </div>
 
@@ -813,7 +816,7 @@ button:hover{
             <option>29 Mei 2026</option>
             <option>30 Mei 2026</option>
           </select>
-          <button onclick="addTask()">Tambahkan Tugas</button>
+          <button id="teacherActionBtn" onclick="addTask()">Tambahkan Tugas</button>
         </div>
         <h3 style="margin-top: 25px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px;">📋 Daftar Tugas Anda & Password Aktif</h3>
         <div id="teacherTaskList"></div>
@@ -1008,7 +1011,7 @@ async function register(){
     const uid = userCred.user.uid;
 
     // Generate username otomatis dari nama + angka acak
-    const autoUsername = fullName.toLowerCase().replace(/\s+/g, '') + Math.floor(1000 + Math.random() * 9000);
+    const autoUsername = fullName.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(1000 + Math.random() * 9000);
 
     // Simpan data profil ke Firestore
     await setDoc(doc(db, "users", uid), {
@@ -1052,10 +1055,26 @@ async function login(){
   btn.disabled = true;
 
   try {
-    const { auth, db, signInWithEmailAndPassword, doc, getDoc } = window._fb;
+    const { auth, db, signInWithEmailAndPassword, collection, query, getDoc, doc } = window._fb;
+    const { getDocs, where } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
-    // Firebase Auth menggunakan email — login dengan email langsung
-    await signInWithEmailAndPassword(auth, loginUser, loginPass);
+    let emailToUse = loginUser;
+
+    // Jika input bukan format email, cari email berdasarkan username
+    if (!loginUser.includes("@")) {
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("username", "==", loginUser));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        alert("Username tidak ditemukan!");
+        btn.innerText = "Login";
+        btn.disabled = false;
+        return;
+      }
+      emailToUse = snap.docs[0].data().email;
+    }
+
+    await signInWithEmailAndPassword(auth, emailToUse, loginPass);
     // onAuthStateChanged di module script akan menangani tampilan dashboard
 
   } catch (err) {
@@ -1295,10 +1314,10 @@ function loadTasks(){
           <span class="password-badge">${data.currentPassword || 'TITIK-KOSONG'}</span>
         </div>
         <div style="margin-top:12px; display:flex; gap:10px;">
-          <button onclick="startEdit(${data.id})" style="background:#facc15; color:black; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
+          <button onclick="startEdit('${data.id}')" style="background:#facc15; color:black; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
             <i class="ri-edit-line"></i> Edit
           </button>
-          <button onclick="deleteTask(${data.id})" style="background:#ef4444; color:white; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
+          <button onclick="deleteTask('${data.id}')" style="background:#ef4444; color:white; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
             <i class="ri-delete-bin-line"></i> Hapus
           </button>
         </div>
@@ -1306,6 +1325,7 @@ function loadTasks(){
       if(teacherList) teacherList.appendChild(card);
     }
 
+    if(currentUser.role !== "student") return; // Skip render kartu siswa untuk guru
     const isCompleted = userCheckedList.includes(data.id);
     const studentTaskCard = document.createElement("div");
     studentTaskCard.className = `glass-card student-task-item ${isCompleted ? 'completed' : ''}`;
@@ -1316,7 +1336,7 @@ function loadTasks(){
       validationSectionHtml = `
         <div class="password-verif-box">
           <input type="text" id="pass-input-${data.id}" placeholder="Kode Guru..." maxlength="6">
-          <button onclick="verifyTaskPassword(${data.id}, '${data.teacher}')">Centang</button>
+          <button onclick="verifyTaskPassword('${data.id}', '${data.teacher}')">Centang</button>
         </div>
       `;
     } else {
@@ -1383,7 +1403,7 @@ function startEdit(id){
   if(task.targetClass) document.getElementById("teacherClassSelect").value = task.targetClass;
   
   const formTitle = document.querySelector(".teacher-form h3");
-  const actionBtn = document.querySelector(".teacher-form button");
+  const actionBtn = document.getElementById("teacherActionBtn");
   
   if(formTitle) formTitle.innerHTML = `<span style="color: #facc15;"><i class="ri-edit-box-line"></i> Mode Edit: Mengubah Tugas</span>`;
   if(actionBtn) {
@@ -1421,7 +1441,7 @@ function resetTeacherForm(){
   if(teacherClassSelect) teacherClassSelect.value = "";
   
   const formTitle = document.querySelector(".teacher-form h3");
-  const actionBtn = document.querySelector(".teacher-form button");
+  const actionBtn = document.getElementById("teacherActionBtn");
   
   if(formTitle) formTitle.innerHTML = "➕ Tambah Tugas";
   if(actionBtn) {
