@@ -101,7 +101,15 @@
     }
   }
 
+  // Tampilkan loading overlay saat restore session (refresh)
+  const loadingOverlay = document.createElement("div");
+  loadingOverlay.id = "sessionLoader";
+  loadingOverlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff;font-family:Poppins,sans-serif;gap:14px;";
+  loadingOverlay.innerHTML = `<div style="width:44px;height:44px;border:4px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;"></div><span style="font-size:14px;opacity:0.85;">Memuat sesi...</span>`;
+  document.body.appendChild(loadingOverlay);
+
   onAuthStateChanged(auth, async (firebaseUser) => {
+    const removeLoader = () => { const el = document.getElementById("sessionLoader"); if(el) el.remove(); };
     if (firebaseUser) {
       try {
       // User sudah login — ambil data profil dari Firestore (dengan retry jika offline)
@@ -128,6 +136,7 @@
         document.getElementById("authBottomNav").style.display = "none";
         document.getElementById("dashboard").style.display = "block";
         document.getElementById("bottomNav").style.display = "flex";
+        removeLoader(); // Hapus loading overlay
         switchTab('profile');
         document.getElementById("profileName").innerText = currentUser.fullName;
         document.getElementById("profileUsername").innerText = currentUser.username;
@@ -152,10 +161,14 @@
       } catch(e) {
         // Firestore error — reset button dan tampilkan pesan
         console.error("onAuthStateChanged error:", e);
+        removeLoader();
         const loginBtnReset2 = document.querySelector("#loginForm button[type='button']");
         if (loginBtnReset2) { loginBtnReset2.innerText = "Login"; loginBtnReset2.disabled = false; }
         alert("Terjadi kesalahan saat memuat data. Periksa koneksi internet.");
       }
+    } else {
+      // User tidak login / belum punya session
+      removeLoader();
     }
   });
 </script>
@@ -167,6 +180,7 @@
   box-sizing:border-box;
   font-family:'Poppins',sans-serif;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 body{
   min-height:100vh;
@@ -1066,10 +1080,15 @@ async function register(){
       createdAt: serverTimestamp()
     });
 
-    alert("Register berhasil! Silakan login.");
+    // Sign out dulu setelah register — cegah onAuthStateChanged terpicu
+    // sebelum data Firestore benar-benar tersimpan
+    const { signOut } = window._fb;
+    await signOut(auth);
+
+    alert("Register berhasil! Silakan login dengan akun baru Anda.");
     switchForm();
     document.getElementById("loginUser").value = email;
-    document.getElementById("loginPass").value = password;
+    document.getElementById("loginPass").value = "";
   } catch (err) {
     let msg = "Gagal mendaftar.";
     if (err.code === "auth/email-already-in-use") msg = "Email sudah digunakan!";
