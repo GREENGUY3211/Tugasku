@@ -17,7 +17,7 @@
   // ============================================================
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, enableIndexedDbPersistence, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
   const firebaseConfig = {
@@ -34,6 +34,15 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
   const storage = getStorage(app);
+
+  // Aktifkan offline persistence — Firestore cache data lokal, sync saat online kembali
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn("Firestore persistence gagal: beberapa tab terbuka sekaligus.");
+    } else if (err.code === 'unimplemented') {
+      console.warn("Browser tidak mendukung offline persistence.");
+    }
+  });
 
   // Expose ke window agar bisa diakses fungsi JS global di bawah
   window._fb = { auth, db, storage, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, deleteDoc, serverTimestamp, ref, uploadString, getDownloadURL, deleteObject };
