@@ -76,12 +76,28 @@
   };
 
   // Pantau status login dari Firebase Auth
+  // Helper: retry getDoc hingga N kali jika offline
+  async function getDocWithRetry(docRef, maxRetries = 5, delayMs = 2000) {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await getDoc(docRef);
+      } catch (e) {
+        const isOffline = e.code === "unavailable" || (e.message && e.message.includes("offline"));
+        if (isOffline && i < maxRetries - 1) {
+          await new Promise(r => setTimeout(r, delayMs));
+        } else {
+          throw e;
+        }
+      }
+    }
+  }
+
   onAuthStateChanged(auth, async (firebaseUser) => {
     if (firebaseUser) {
       try {
-      // User sudah login — ambil data profil dari Firestore
+      // User sudah login — ambil data profil dari Firestore (dengan retry jika offline)
       const { db, doc, getDoc } = window._fb;
-      const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+      const userDoc = await getDocWithRetry(doc(db, "users", firebaseUser.uid));
       // Selalu reset tombol login (sukses maupun gagal)
       const loginBtnReset = document.querySelector("#loginForm button[type='button']");
       if (loginBtnReset) { loginBtnReset.innerText = "Login"; loginBtnReset.disabled = false; }
@@ -1129,31 +1145,42 @@ async function logout(){
   resetTeacherForm();
 }
 
-// ================= FOTO PROFILE (Firebase Storage) =================
+// ================= FOTO PROFILE (disimpan base64 di Firestore, bypass CORS Storage) =================
 document.getElementById("photoInput").addEventListener("change", async function(e){
   const file = e.target.files[0];
-  if(file && currentUser){
+  if (!file || !currentUser) return;
+
+  // Kompres gambar sebelum simpan agar tidak terlalu besar
+  const compressImage = (file, maxWidth = 300, quality = 0.7) => new Promise((resolve) => {
     const reader = new FileReader();
-    reader.onload = async function(event){
-      const imageData = event.target.result;
-      document.getElementById("profileImage").src = imageData;
-
-      try {
-        const { storage, db, ref, uploadString, getDownloadURL, doc, updateDoc } = window._fb;
-        const storageRef = ref(storage, `profilePhotos/${currentUser.uid}`);
-        await uploadString(storageRef, imageData, 'data_url');
-        const downloadURL = await getDownloadURL(storageRef);
-
-        // Update URL foto di Firestore
-        await updateDoc(doc(db, "users", currentUser.uid), { photoURL: downloadURL });
-        currentUser.photoURL = downloadURL;
-        document.getElementById("profileImage").src = downloadURL;
-      } catch(err) {
-        console.error("Gagal upload foto:", err);
-        alert("Gagal menyimpan foto ke server. Foto hanya tampil sementara.");
-      }
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
+  });
+
+  try {
+    document.getElementById("profileImage").src = "https://via.placeholder.com/150?text=Uploading...";
+    const compressedData = await compressImage(file);
+    document.getElementById("profileImage").src = compressedData;
+
+    const { db, doc, updateDoc } = window._fb;
+    // Simpan base64 langsung ke Firestore (menghindari CORS Firebase Storage)
+    await updateDoc(doc(db, "users", currentUser.uid), { photoURL: compressedData });
+    currentUser.photoURL = compressedData;
+  } catch(err) {
+    console.error("Gagal upload foto:", err);
+    // Tetap tampilkan foto lokal meski Firestore gagal
+    alert("Foto ditampilkan sementara, tapi gagal disimpan ke server. Periksa koneksi.");
   }
 });
 
@@ -1162,13 +1189,13 @@ async function removePhoto() {
     document.getElementById("profileImage").src = "https://via.placeholder.com/150";
     document.getElementById("photoInput").value = "";
     try {
-      const { storage, db, ref, deleteObject, doc, updateDoc } = window._fb;
-      const storageRef = ref(storage, `profilePhotos/${currentUser.uid}`);
-      try { await deleteObject(storageRef); } catch(_) { /* File mungkin tidak ada */ }
+      const { db, doc, updateDoc } = window._fb;
+      // Hapus photoURL dari Firestore (foto disimpan base64, bukan di Storage)
       await updateDoc(doc(db, "users", currentUser.uid), { photoURL: "" });
       currentUser.photoURL = "";
     } catch(err) {
       console.error("Gagal hapus foto:", err);
+      alert("Gagal menghapus foto dari server.");
     }
   }
 }
