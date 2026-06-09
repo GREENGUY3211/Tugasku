@@ -1375,7 +1375,9 @@ function loadTasks(){
   const userCheckedList = checkedTasks[studentKey] || [];
 
   allTasks.forEach(data => {
-    if(currentUser.role === "teacher" && data.teacher === currentUser.username){
+    // ── GURU: tampilkan tugas milik sendiri ──
+    if(currentUser.role === "teacher") {
+      if(data.teacher !== currentUser.username) return; // hanya tugas sendiri
       const card = document.createElement("div");
       card.className = "teacher-card";
       card.innerHTML = `
@@ -1397,9 +1399,13 @@ function loadTasks(){
         </div>
       `;
       if(teacherList) teacherList.appendChild(card);
+      return; // selesai untuk iterasi ini
     }
 
-    if(currentUser.role !== "student") return; // Skip render kartu siswa untuk guru
+    // ── SISWA: tampilkan tugas sesuai kelas ──
+    if(currentUser.role !== "student") return;
+    // Filter: hanya tampilkan tugas yang targetClass sesuai kelas siswa
+    if(data.targetClass && data.targetClass !== currentUser.kelas) return;
     const isCompleted = userCheckedList.includes(data.id);
     const studentTaskCard = document.createElement("div");
     studentTaskCard.className = `glass-card student-task-item ${isCompleted ? 'completed' : ''}`;
