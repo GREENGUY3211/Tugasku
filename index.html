@@ -1393,6 +1393,7 @@ function resetTeacherForm(){
 // ================= UPDATE GRAFIK BATANG =================
 // ================= UPDATE GRAFIK BATANG =================
 // ================= UPDATE GRAFIK BATANG =================
+// ================= UPDATE GRAFIK BATANG =================
 function updateChart(){
   const dates = {
     "19 Juni 2026": 0,
@@ -1424,6 +1425,7 @@ function updateChart(){
 
   Object.keys(dates).forEach(date => {
     let barClass = "";
+    // PERBAIKAN: Menyamakan validasi tanggal Juni/Juli agar sinkron dengan data di atas
     if(date === "19 Juni 2026" || date === "12 Juli 2026") barClass = "math";
     else if(date === "20 Juni 2026" || date === "19 Juli 2026") barClass = "ipa";
     else if(date === "25 Juni 2026") barClass = "indo";
@@ -1437,6 +1439,7 @@ function updateChart(){
       return p && p.innerText === shortDateForm.replace(" 2026", "");
     });
 
+    // PERBAIKAN: Mengubah "if(box => box)" menjadi pengecekan variabel "if(barBox)" yang benar
     if(barBox){
       const barContainer = barBox.querySelector(".bar") || document.createElement("div");
       barContainer.className = `bar ${barClass}`;
