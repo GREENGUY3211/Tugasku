@@ -931,14 +931,12 @@ function switchTab(target) {
 function switchForm(){
   const loginForm = document.getElementById("loginForm");
   const registerForm = document.getElementById("registerForm");
-  const title = document.getElementById("formTitle");
   const authBottomNav = document.getElementById("authBottomNav");
 
   if(loginForm.style.display !== "none"){
     // Beralih ke halaman SIGN UP (Register)
     loginForm.style.display = "none";
     registerForm.style.display = "block";
-    title.innerText = "Sign Up";
     authBottomNav.style.display = "none"; 
     
     // Reset pilihan default ke siswa saat form signup dibuka
@@ -947,7 +945,6 @@ function switchForm(){
     // Beralih ke halaman SIGN IN (Login)
     loginForm.style.display = "block";
     registerForm.style.display = "none";
-    title.innerText = "Sign In";
     authBottomNav.style.display = "flex"; 
   }
 }
@@ -1312,6 +1309,7 @@ function loadTasks(){
 
   updateChart(); 
 }
+
 // ================= HAPUS TUGAS GURU =================
 function deleteTask(id){
   if(!currentUser) return;
@@ -1391,9 +1389,6 @@ function resetTeacherForm(){
 }
 
 // ================= UPDATE GRAFIK BATANG =================
-// ================= UPDATE GRAFIK BATANG =================
-// ================= UPDATE GRAFIK BATANG =================
-// ================= UPDATE GRAFIK BATANG =================
 function updateChart(){
   const dates = {
     "19 Juni 2026": 0,
@@ -1425,22 +1420,20 @@ function updateChart(){
 
   Object.keys(dates).forEach(date => {
     let barClass = "";
-    // PERBAIKAN: Menyamakan validasi tanggal Juni/Juli agar sinkron dengan data di atas
     if(date === "19 Juni 2026" || date === "12 Juli 2026") barClass = "math";
     else if(date === "20 Juni 2026" || date === "19 Juli 2026") barClass = "ipa";
     else if(date === "25 Juni 2026") barClass = "indo";
     else if(date === "30 Juni 2026") barClass = "inggris";
     else if(date === "05 Juli 2026") barClass = "sejarah";
 
-    let shortDateForm = date.replace(" Juni ", " Jun").replace(" Juli ", " Jul");
+    let shortDateForm = date.replace(" Juni ", " Jun ").replace(" Juli ", " Jul ");
 
     const barBox = Array.from(document.querySelectorAll(".bar-box")).find(box => {
       const p = box.querySelector("p");
-      return p && p.innerText === shortDateForm.replace(" 2026", "");
+      return p && p.innerText === shortDateForm.replace(" 2026", "").trim();
     });
-
-    // PERBAIKAN: Mengubah "if(box => box)" menjadi pengecekan variabel "if(barBox)" yang benar
-    if(barBox){
+    
+    if(barBox){ 
       const barContainer = barBox.querySelector(".bar") || document.createElement("div");
       barContainer.className = `bar ${barClass}`;
       
@@ -1452,63 +1445,6 @@ function updateChart(){
       
       if(!barBox.querySelector(".bar")){
         barBox.insertBefore(barContainer, barBox.querySelector("p"));
-      }
-    }
-  });
-}
-
-  const studentKey = currentUser ? currentUser.username : "";
-  const userCheckedList = (currentUser && currentUser.role === "student") ? (checkedTasks[studentKey] || []) : [];
-
-  Object.keys(tasks).forEach(teacher => {
-    if(Array.isArray(tasks[teacher])){
-      tasks[teacher].forEach(t => {
-        
-        // ================= FILTER KELAS UNTUK GRAFIK =================
-        // Jika yang login adalah murid, grafik HANYA menghitung tugas yang kelasnya cocok
-        if (currentUser && currentUser.role === "student" && t.targetClass !== currentUser.kelas) {
-          return; // Lewati tugas yang bukan kelasnya murid ini
-        }
-        // =============================================================
-
-        if(dates[t.deadline] !== undefined && !userCheckedList.includes(t.id)){
-          dates[t.deadline]++;
-        }
-      });
-    }
-  });
-
-  const maxTasks = Math.max(...Object.values(dates), 1);
-
-  Object.keys(dates).forEach(date => {
-    let barClass = "";
-    if(date === "25 Mei 2026" || date === "30 Mei 2026") barClass = "math";
-    else if(date === "26 Mei 2026") barClass = "ipa";
-    else if(date === "27 Mei 2026") barClass = "indo";
-    else if(date === "28 Mei 2026") barClass = "inggris";
-    else if(date === "29 Mei 2026") barClass = "sejarah";
-
-    const barBox = Array.from(document.querySelectorAll(".bar-box")).find(box => {
-      const p = box.querySelector("p");
-      return p && p.innerText === date.replace(" 2026", "");
-    });
-
-    if(box => box){
-      const barBoxEl = barBox;
-      if(barBoxEl){
-        const barContainer = barBoxEl.querySelector(".bar") || document.createElement("div");
-        barContainer.className = `bar ${barClass}`;
-        
-        const count = dates[date];
-        const heightPercent = (count / maxTasks) * 180;
-        barContainer.style.height = `${heightPercent}px`;
-        
-        barContainer.innerHTML = `<span>${count}</span>`;
-        
-        const existingBar = barBoxEl.querySelector(".bar");
-        if(!existingBar){
-          barBoxEl.insertBefore(barContainer, barBoxEl.querySelector("p"));
-        }
       }
     }
   });
