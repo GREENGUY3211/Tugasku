@@ -8,179 +8,14 @@
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- ================= FIREBASE SDK ================= -->
-<script type="module">
-  // ============================================================
-  // KONFIGURASI FIREBASE
-  // Ganti nilai di bawah ini dengan konfigurasi project Firebase Anda
-  // Dapatkan dari: Firebase Console > Project Settings > Your Apps
-  // ============================================================
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, enableIndexedDbPersistence, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBHfmfrq7FPiS2YPNjs_Z8feVONz2M5ics",
-    authDomain: "tugasku-school-system.firebaseapp.com",
-    projectId: "tugasku-school-system",
-    storageBucket: "tugasku-school-system.firebasestorage.app",
-    messagingSenderId: "437564475592",
-    appId: "1:437564475592:web:41f9b828676392585ebdfd"
-  };
-
-  // Inisialisasi Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const storage = getStorage(app);
-
-  // Aktifkan offline persistence — Firestore cache data lokal, sync saat online kembali
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn("Firestore persistence gagal: beberapa tab terbuka sekaligus.");
-    } else if (err.code === 'unimplemented') {
-      console.warn("Browser tidak mendukung offline persistence.");
-    }
-  });
-
-  // Expose ke window agar bisa diakses fungsi JS global di bawah
-  window._fb = { auth, db, storage, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, deleteDoc, serverTimestamp, ref, uploadString, getDownloadURL, deleteObject };
-
-  // ================= LISTENER REALTIME TASKS =================
-  // Akan diaktifkan setelah login
-  window._tasksUnsubscribe = null;
-
-  window._listenTasks = function() {
-    if (window._tasksUnsubscribe) window._tasksUnsubscribe();
-    const { db, collection, onSnapshot } = window._fb;
-    const q = collection(db, "tasks");
-    window._tasksUnsubscribe = onSnapshot(q, (snapshot) => {
-      tasks = {};
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const teacher = data.teacher;
-        if (!tasks[teacher]) tasks[teacher] = [];
-        tasks[teacher].push({ ...data, id: docSnap.id });
-      });
-      if (currentUser) loadTasks();
-    });
-  };
-
-  // ================= LISTENER REALTIME CHECKED TASKS =================
-  window._checkedUnsubscribe = null;
-
-  window._listenCheckedTasks = function(username) {
-    if (window._checkedUnsubscribe) window._checkedUnsubscribe();
-    const { db, doc, onSnapshot } = window._fb;
-    const ref = doc(db, "checkedTasks", username);
-    window._checkedUnsubscribe = onSnapshot(ref, (docSnap) => {
-      if (docSnap.exists()) {
-        checkedTasks[username] = docSnap.data().list || [];
-      } else {
-        checkedTasks[username] = [];
-      }
-      if (currentUser) loadTasks();
-    });
-  };
-
-  // Pantau status login dari Firebase Auth
-  // Helper: retry getDoc hingga N kali jika offline
-  async function getDocWithRetry(docRef, maxRetries = 5, delayMs = 2000) {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        return await getDoc(docRef);
-      } catch (e) {
-        const isOffline = e.code === "unavailable" || (e.message && e.message.includes("offline"));
-        if (isOffline && i < maxRetries - 1) {
-          await new Promise(r => setTimeout(r, delayMs));
-        } else {
-          throw e;
-        }
-      }
-    }
-  }
-
-  // Tampilkan loading overlay saat restore session (refresh)
-  const loadingOverlay = document.createElement("div");
-  loadingOverlay.id = "sessionLoader";
-  loadingOverlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff;font-family:Poppins,sans-serif;gap:14px;";
-  loadingOverlay.innerHTML = `<div style="width:44px;height:44px;border:4px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;"></div><span style="font-size:14px;opacity:0.85;">Memuat sesi...</span>`;
-  document.body.appendChild(loadingOverlay);
-
-  onAuthStateChanged(auth, async (firebaseUser) => {
-    const removeLoader = () => { const el = document.getElementById("sessionLoader"); if(el) el.remove(); };
-    if (firebaseUser) {
-      try {
-      // User sudah login — ambil data profil dari Firestore (dengan retry jika offline)
-      const { db, doc, getDoc } = window._fb;
-      const userDoc = await getDocWithRetry(doc(db, "users", firebaseUser.uid));
-      // Selalu reset tombol login (sukses maupun gagal)
-      const loginBtnReset = document.querySelector("#loginForm button[type='button']");
-      if (loginBtnReset) { loginBtnReset.innerText = "Login"; loginBtnReset.disabled = false; }
-
-      if (!userDoc.exists()) {
-        // Akun Auth ada tapi data Firestore tidak ditemukan — logout paksa
-        alert("Data akun tidak ditemukan. Silakan daftar ulang.");
-        const { signOut } = window._fb;
-        await signOut(auth);
-        return;
-      }
-
-      if (userDoc.exists()) {
-        currentUser = { uid: firebaseUser.uid, ...userDoc.data() };
-        window._listenTasks();
-        window._listenCheckedTasks(currentUser.username);
-        // Tampilkan dashboard
-        document.getElementById("authBox").style.display = "none";
-        document.getElementById("authBottomNav").style.display = "none";
-        document.getElementById("dashboard").style.display = "block";
-        document.getElementById("bottomNav").style.display = "flex";
-        removeLoader(); // Hapus loading overlay
-        switchTab('profile');
-        document.getElementById("profileName").innerText = currentUser.fullName;
-        document.getElementById("profileUsername").innerText = currentUser.username;
-        document.getElementById("profileEmail").innerText = currentUser.email;
-        if (currentUser.role === "student") {
-          document.getElementById("studentPanel").style.display = "block";
-          document.getElementById("teacherPanel").style.display = "none";
-          document.getElementById("dashboardTitle").innerText = "Dashboard Siswa";
-          document.getElementById("profileRole").innerText = "Siswa";
-          document.getElementById("classRow").style.display = "block";
-          document.getElementById("profileClass").innerText = currentUser.kelas || "-";
-          document.getElementById("profileImage").src = currentUser.photoURL || "https://via.placeholder.com/150";
-        } else {
-          document.getElementById("studentPanel").style.display = "none";
-          document.getElementById("teacherPanel").style.display = "block";
-          document.getElementById("dashboardTitle").innerText = "Dashboard Guru";
-          document.getElementById("profileRole").innerText = "Guru";
-          document.getElementById("classRow").style.display = "none";
-          document.getElementById("profileImage").src = currentUser.photoURL || "https://via.placeholder.com/150";
-        }
-      }
-      } catch(e) {
-        // Firestore error — reset button dan tampilkan pesan
-        console.error("onAuthStateChanged error:", e);
-        removeLoader();
-        const loginBtnReset2 = document.querySelector("#loginForm button[type='button']");
-        if (loginBtnReset2) { loginBtnReset2.innerText = "Login"; loginBtnReset2.disabled = false; }
-        alert("Terjadi kesalahan saat memuat data. Periksa koneksi internet.");
-      }
-    } else {
-      // User tidak login / belum punya session
-      removeLoader();
-    }
-  });
-</script>
-
 <style>
+/* ================= GLOBAL RESETS ================= */
 *{
   margin:0;
   padding:0;
   box-sizing:border-box;
   font-family:'Poppins',sans-serif;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 body{
   min-height:100vh;
@@ -225,17 +60,19 @@ body::before{
   height:90vh;
 }
 
-/* ================= TITLE ================= */
+/* ================= TITLE & HEADINGS ================= */
 h1,h2,h3,h4,p,small{
   color:white;
 }
 
 h2{
   text-align:center;
-  margin-bottom:10px;
+  margin-bottom:20px;
+  font-weight:600;
+  letter-spacing: 0.5px;
 }
 
-/* ================= FORM ================= */
+/* ================= FORMS & INPUTS ================= */
 form{
   width:100%;
 }
@@ -257,8 +94,15 @@ form{
   border-bottom:2px solid rgba(255,255,255,0.3);
 }
 
+.input-group select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
 .input-group select option{
-  color:black;
+  background-color: #1e1e24;
+  color: #ffffff;
 }
 
 .input-group label{
@@ -267,16 +111,19 @@ form{
   bottom:8px;
   color:rgba(255,255,255,0.8);
   transition:0.3s;
+  pointer-events: none;
 }
 
 .input-group input:focus ~ label,
-.input-group input:valid ~ label{
+.input-group input:valid ~ label,
+.input-group select:focus ~ label,
+.input-group select:valid ~ label {
   transform:translateY(-30px);
   font-size:12px;
   color:white;
 }
 
-/* ================= BUTTON ================= */
+/* ================= BUTTONS ================= */
 button{
   width:100%;
   padding:12px;
@@ -294,7 +141,7 @@ button:hover{
   background:rgba(255,255,255,0.4);
 }
 
-/* ================= LINK ================= */
+/* ================= LINKS ================= */
 .link{
   margin-top:20px;
   text-align:center;
@@ -306,7 +153,7 @@ button:hover{
   font-weight:bold;
 }
 
-/* ================= PROFILE ================= */
+/* ================= PROFILE SECTIONS ================= */
 .profile-wrapper{
   display:flex;
   flex-direction:column;
@@ -359,7 +206,7 @@ button:hover{
   background:rgba(239, 68, 68, 0.7);
 }
 
-/* ================= CARD ================= */
+/* ================= CARDS & TASKS ================= */
 .info-card,
 .glass-card,
 .class-card,
@@ -388,7 +235,7 @@ button:hover{
   margin-top:10px;
 }
 
-/* Gaya Khusus Tugas Selesai */
+/* Student Task Completed Items */
 .student-task-item {
   display: flex;
   align-items: flex-start;
@@ -420,7 +267,7 @@ button:hover{
   flex: 1;
 }
 
-/* Fitur input verifikasi password di sisi murid */
+/* Verification Layout Engine */
 .password-verif-box {
   margin-top: 10px;
   display: flex;
@@ -447,7 +294,7 @@ button:hover{
   color: black;
 }
 
-/* Badge Password khusus di Halaman Guru */
+/* Teacher View Badge Components */
 .password-badge {
   display: inline-block;
   background: #facc15;
@@ -460,7 +307,7 @@ button:hover{
   margin-top: 5px;
 }
 
-/* ================= GURU PANEL ================= */
+/* ================= TEACHER PANEL CONTROL ================= */
 .teacher-panel{
   display:none;
 }
@@ -498,16 +345,7 @@ button:hover{
   color:black;
 }
 
-.task-textarea {
-  resize: vertical;
-  min-height: 100px;
-  max-height: 300px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  font-size: 14px;
-}
-
-/* ================= NAV ================= */
+/* ================= NAVIGATION BAR SYSTEM ================= */
 .bottom-nav, .auth-bottom-nav{
   position:fixed;
   bottom:15px;
@@ -525,7 +363,7 @@ button:hover{
 }
 
 .bottom-nav {
-  display: none; /* Disembunyikan saat belum login */
+  display: none;
 }
 
 .nav-item{
@@ -556,7 +394,7 @@ button:hover{
   color:#ef4444;
 }
 
-/* ================= MODAL STYLE (INFO FOOTER AUTH) ================= */
+/* ================= MODAL INTERFACES ================= */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -623,7 +461,7 @@ button:hover{
   color: #facc15;
 }
 
-/* ================= PERFORMANCE CHART ================= */
+/* ================= GRAPHICS & CHARTS ================= */
 .performance-card{
   margin-top:20px;
   margin-bottom:30px;
@@ -681,7 +519,7 @@ button:hover{
   text-align:center;
 }
 
-/* warna batang */
+/* Data Sheet Color Sets */
 .math{ background:linear-gradient(to top,#3b82f6,#60a5fa); }
 .ipa{ background:linear-gradient(to top,#22c55e,#4ade80); }
 .indo{ background:linear-gradient(to top,#f59e0b,#facc15); }
@@ -692,6 +530,49 @@ button:hover{
   padding-bottom: 80px;
 }
 
+/* ================= ROLE TOGGLE SIGNUP DESIGN ================= */
+.role-toggle-container {
+  display: flex;
+  gap: 12px;
+  margin-top: 25px;
+  width: 100%;
+}
+
+.role-btn {
+  flex: 1;
+  margin-top: 0 !important;
+  padding: 12px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.role-btn i {
+  font-size: 16px;
+}
+
+.role-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.role-btn.active {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #60a5fa;
+  color: white;
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.3);
+  font-weight: 600;
+}
+
+/* ================= RESPONSIVE LAYOUTS ================= */
 @media(max-width:500px){
   .container,
   .glass-dashboard{
@@ -707,41 +588,41 @@ button:hover{
   }
 }
 </style>
+
 </head>
 
 <body>
 
 <div class="container" id="authBox">
 
-  <!-- ===== BRAND HEADER ===== -->
   <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:22px;">
-    <!-- Logo SVG -->
-    <div style="width:72px; height:72px; margin-bottom:12px;">
-      <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
-        <!-- Outer glow ring -->
-        <circle cx="36" cy="36" r="34" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
-        <!-- Background circle -->
-        <circle cx="36" cy="36" r="32" fill="rgba(255,255,255,0.12)"/>
-        <!-- Clipboard body -->
-        <rect x="20" y="22" width="32" height="36" rx="5" ry="5" fill="rgba(255,255,255,0.85)"/>
-        <!-- Clipboard clip at top -->
+    <div style="width:76px; height:76px; margin-bottom:12px; display:flex; justify-content:center; align-items:center;">
+      <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%; filter: drop-shadow(0px 0px 14px rgba(37, 99, 235, 0.65));">
+        <defs>
+          <radialGradient id="appNeonGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#2563eb" />
+            <stop offset="60%" stop-color="#1e40af" />
+            <stop offset="100%" stop-color="#2e1065" />
+          </radialGradient>
+        </defs>
+        
+        <circle cx="36" cy="36" r="34" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
+        <circle cx="36" cy="36" r="32" fill="url(#appNeonGlow)"/>
+        
+        <rect x="20" y="22" width="32" height="36" rx="5" ry="5" fill="rgba(255,255,255,0.9)"/>
         <rect x="29" y="18" width="14" height="8" rx="4" ry="4" fill="rgba(255,255,255,0.95)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-        <!-- Checkmark circle (done task) -->
+        
         <circle cx="36" cy="40" r="9" fill="#1e3a5f"/>
-        <!-- Checkmark tick -->
         <polyline points="31,40 34.5,44 41,36" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <!-- Brand name -->
+    
     <div style="display:flex; align-items:baseline; gap:2px;">
       <span style="font-size:30px; font-weight:700; color:white; letter-spacing:-0.5px; line-height:1;">Tugas</span>
       <span style="font-size:30px; font-weight:300; color:rgba(255,255,255,0.75); letter-spacing:-0.5px; line-height:1;">Ku</span>
     </div>
     <p style="font-size:11px; color:rgba(255,255,255,0.55); margin-top:4px; letter-spacing:1.5px; text-transform:uppercase;">Manajemen Tugas Sekolah</p>
   </div>
-  <!-- ======================== -->
-
-  <h2 id="formTitle">Sign In</h2>
 
   <form id="loginForm">
     <div class="input-group">
@@ -761,7 +642,11 @@ button:hover{
   <form id="registerForm" style="display:none;">
     <div class="input-group">
       <input type="text" id="fullName" required>
-      <label>Full Name</label>
+      <label>Nama Lengkap</label>
+    </div>
+    <div class="input-group">
+      <input type="text" id="username" required>
+      <label>Username</label>
     </div>
     <div class="input-group">
       <input type="email" id="email" required>
@@ -773,34 +658,41 @@ button:hover{
     </div>
     <div class="input-group">
       <input type="password" id="confirmPassword" required>
-      <label>Confirm Password</label>
+      <label>Konfirmasi Password</label>
     </div>
-    <div class="input-group">
-      <select id="role" onchange="toggleClassField()">
-        <option value="student">Siswa</option>
-        <option value="teacher">Guru</option>
+    
+    <div class="role-toggle-container">
+      <input type="hidden" id="role" value="student">
+      <button type="button" id="btnRoleStudent" class="role-btn active" onclick="setRoleSelection('student')">
+        <i class="ri-user-line"></i> Siswa
+      </button>
+      <button type="button" id="btnRoleTeacher" class="role-btn" onclick="setRoleSelection('teacher')">
+        <i class="ri-user-star-line"></i> Guru
+      </button>
+    </div>
+
+    <div class="input-group" id="regKelasInputGroup">
+      <select id="kelas" required>
+        <option value="" disabled selected></option>
+        <option value="X-1">Kelas X-1</option>
+        <option value="X-2">Kelas X-2</option>
+        <option value="X-3">Kelas X-3</option>
+        <option value="X-4">Kelas X-4</option>
+        <option value="XI-1">Kelas XI-1</option>
+        <option value="XI-2">Kelas XI-2</option>
+        <option value="XI-3">Kelas XI-3</option>
+        <option value="XI-4">Kelas XI-4</option>
+        <option value="XII-1">Kelas XII-1</option>
+        <option value="XII-2">Kelas XII-2</option>
+        <option value="XII-3">Kelas XII-3</option>
+        <option value="XII-4">Kelas XII-4</option>
       </select>
+      <label>Pilih Kelas Anda</label>
     </div>
-    <div class="input-group" id="classFieldWrapper">
-      <select id="classSelect">
-        <option value="">Pilih Kelas</option>
-        <option value="10-1">10-1</option>
-        <option value="10-2">10-2</option>
-        <option value="10-3">10-3</option>
-        <option value="10-4">10-4</option>
-        <option value="11-1">11-1</option>
-        <option value="11-2">11-2</option>
-        <option value="11-3">11-3</option>
-        <option value="11-4">11-4</option>
-        <option value="12-1">12-1</option>
-        <option value="12-2">12-2</option>
-        <option value="12-3">12-3</option>
-        <option value="12-4">12-4</option>
-      </select>
-    </div>
-    <button type="button" onclick="register()">Register</button>
+
+    <button type="button" onclick="register()">Daftar</button>
     <div class="link">
-      Already have account? <a href="#" onclick="switchForm()">Sign In</a>
+      Sudah punya akun? <a href="#" onclick="switchForm()">Masuk</a>
     </div>
   </form>
 </div>
@@ -827,7 +719,7 @@ button:hover{
         <p><b>Username:</b> <span id="profileUsername"></span></p>
         <p><b>Email:</b> <span id="profileEmail"></span></p>
         <p><b>Role:</b> <span id="profileRole"></span></p>
-        <p id="classRow" style="display:none;"><b>Kelas:</b> <span id="profileClass">-</span></p>
+        <p id="classRow"><b>Kelas:</b> <span id="profileClass">-</span></p>
       </div>
     </div>
 
@@ -868,21 +760,6 @@ button:hover{
         <h2 style="margin-top:15px;">👩‍🏫 Manajemen Tugas</h2>
         <div class="teacher-form">
           <h3>➕ Tambah Tugas</h3>
-          <select id="teacherClassSelect" class="teacher-input">
-            <option value="">Pilih Kelas Tujuan</option>
-            <option value="10-1">10-1</option>
-            <option value="10-2">10-2</option>
-            <option value="10-3">10-3</option>
-            <option value="10-4">10-4</option>
-            <option value="11-1">11-1</option>
-            <option value="11-2">11-2</option>
-            <option value="11-3">11-3</option>
-            <option value="11-4">11-4</option>
-            <option value="12-1">12-1</option>
-            <option value="12-2">12-2</option>
-            <option value="12-3">12-3</option>
-            <option value="12-4">12-4</option>
-          </select>
           <select id="subjectSelect" class="teacher-input">
             <option value="">Pilih Mata Pelajaran</option>
             <option value="Matematika">📘 Matematika</option>
@@ -891,7 +768,48 @@ button:hover{
             <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
             <option value="Sejarah">🏛️ Sejarah</option>
           </select>
-          <textarea id="taskInput" placeholder="Deskripsi Tugas" class="teacher-input task-textarea" rows="4"></textarea>
+          <div class="teacher-form">
+              <h3>➕ Tambah Tugas</h3>
+              <!-- Dropdown Pilihan Kelas Baru untuk Guru -->
+              <select id="taskClassSelect" class="teacher-input" required>
+                <option value="" disabled selected>Pilih Target Kelas</option>
+                <option value="X-1">Kelas X-1</option>
+                <option value="X-2">Kelas X-2</option>
+                <option value="X-3">Kelas X-3</option>
+                <option value="X-4">Kelas X-4</option>
+                <option value="XI-1">Kelas XI-1</option>
+                <option value="XI-2">Kelas XI-2</option>
+                <option value="XI-3">Kelas XI-3</option>
+                <option value="XI-4">Kelas XI-4</option>
+                <option value="XII-1">Kelas XII-1</option>
+                <option value="XII-2">Kelas XII-2</option>
+                <option value="XII-3">Kelas XII-3</option>
+                <option value="XII-4">Kelas XII-4</option>
+              </select>
+    
+              <select id="subjectSelect" class="teacher-input">
+                <option value="">Pilih Mata Pelajaran</option>
+                <option value="Matematika">📘 Matematika</option>
+                <option value="IPA">🧪 IPA</option>
+                <option value="Bahasa Indonesia">📖 Bahasa Indonesia</option>
+                <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
+                <option value="Sejarah">🏛️ Sejarah</option>
+              </select>
+    
+              <!-- Mengubah dari input text menjadi textarea (Deskripsi Tugas) -->
+              <textarea id="taskInput" class="teacher-input" placeholder="Deskripsi Tugas" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
+    
+              <select id="deadlineInput" class="teacher-input">
+                <option value="">Pilih Deadline Mei 2026</option>
+                <option>25 Mei 2026</option>
+                <option>26 Mei 2026</option>
+                <option>27 Mei 2026</option>
+                <option>28 Mei 2026</option>
+                <option>29 Mei 2026</option>
+                <option>30 Mei 2026</option>
+              </select>
+              <button onclick="addTask()">Tambahkan Tugas</button>
+            </div>
           <select id="deadlineInput" class="teacher-input">
             <option value="">Pilih Deadline Mei 2026</option>
             <option>25 Mei 2026</option>
@@ -901,7 +819,7 @@ button:hover{
             <option>29 Mei 2026</option>
             <option>30 Mei 2026</option>
           </select>
-          <button id="teacherActionBtn" onclick="addTask()">Tambahkan Tugas</button>
+          <button onclick="addTask()">Tambahkan Tugas</button>
         </div>
         <h3 style="margin-top: 25px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px;">📋 Daftar Tugas Anda & Password Aktif</h3>
         <div id="teacherTaskList"></div>
@@ -971,12 +889,17 @@ button:hover{
   </div>
 </div>
 
-
 <script>
 let editId = null;
+let accounts = JSON.parse(localStorage.getItem("accounts")) || [];
 let currentUser = null;
-let tasks = {};
-let checkedTasks = {};
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || {};
+if (typeof tasks !== "object" || tasks === null) {
+  tasks = {};
+}
+
+let checkedTasks = JSON.parse(localStorage.getItem("checkedTasks")) || {};
 
 function generateRandomPassword() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; 
@@ -1040,42 +963,60 @@ function switchForm(){
     loginForm.style.display = "none";
     registerForm.style.display = "block";
     title.innerText = "Sign Up";
-    authBottomNav.style.display = "none"; // Sembunyikan bar nav di halaman signup
+    authBottomNav.style.display = "none"; 
+    
+    // Reset pilihan default ke siswa saat form signup dibuka
+    setRoleSelection('student');
   } else {
     // Beralih ke halaman SIGN IN (Login)
     loginForm.style.display = "block";
     registerForm.style.display = "none";
     title.innerText = "Sign In";
-    authBottomNav.style.display = "flex"; // Tampilkan kembali bar nav di halaman signin
+    authBottomNav.style.display = "flex"; 
   }
 }
 
-// ================= TOGGLE KELAS FIELD DI SIGNUP =================
-function toggleClassField(){
-  const role = document.getElementById("role").value;
-  const classWrapper = document.getElementById("classFieldWrapper");
-  if(role === "teacher"){
-    classWrapper.style.display = "none";
-    document.getElementById("classSelect").value = "";
+// ================= FUNGSI TOGGLE PILIHAN PERAN (SISWA / GURU) =================
+function setRoleSelection(selectedRole) {
+  const roleHiddenInput = document.getElementById("role");
+  const btnStudent = document.getElementById("btnRoleStudent");
+  const btnTeacher = document.getElementById("btnRoleTeacher");
+  const classInputGroup = document.getElementById("regKelasInputGroup");
+
+  if (roleHiddenInput) roleHiddenInput.value = selectedRole;
+
+  if (selectedRole === 'student') {
+    if (btnStudent) btnStudent.classList.add('active');
+    if (btnTeacher) btnTeacher.classList.remove('active');
+    if (classInputGroup) classInputGroup.style.display = 'block'; // Tampilkan dropdown kelas
   } else {
-    classWrapper.style.display = "block";
+    if (btnTeacher) btnTeacher.classList.add('active');
+    if (btnStudent) btnStudent.classList.remove('active');
+    if (classInputGroup) classInputGroup.style.display = 'none';  // Sembunyikan dropdown kelas
+    
+    const kelasSelect = document.getElementById("kelas");
+    if (kelasSelect) kelasSelect.value = ""; // Bersihkan nilai kelas jika memilih guru
   }
 }
-async function register(){
+
+// ================= REGISTER =================
+function register(){
   const fullName = document.getElementById("fullName").value.trim();
+  const username = document.getElementById("username").value.trim();
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
   const role = document.getElementById("role").value;
-  const kelas = document.getElementById("classSelect").value;
+  const kelas = document.getElementById("kelas") ? document.getElementById("kelas").value : "";
 
-  if(!fullName || !email || !password){
+  if(!fullName || !username || !email || !password){
     alert("Semua data harus diisi!");
     return;
   }
 
-  if(role === "student" && !kelas){
-    alert("Silakan pilih kelas terlebih dahulu!");
+  // Validasi tambahan jika mendaftar sebagai Siswa wajib memilih kelas
+  if(role === 'student' && !kelas){
+    alert("Silakan tentukan pilihan Kelas Anda!");
     return;
   }
 
@@ -1084,176 +1025,121 @@ async function register(){
     return;
   }
 
-  const btn = document.querySelector("#registerForm button[type='button']");
-  btn.innerText = "Mendaftar...";
-  btn.disabled = true;
-
-  try {
-    const { auth, db, createUserWithEmailAndPassword, doc, setDoc, serverTimestamp } = window._fb;
-
-    // Buat akun di Firebase Auth
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    const uid = userCred.user.uid;
-
-    // Generate username otomatis dari nama + angka acak
-    const autoUsername = fullName.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(1000 + Math.random() * 9000);
-
-    // Simpan data profil ke Firestore
-    await setDoc(doc(db, "users", uid), {
-      fullName,
-      username: autoUsername,
-      email,
-      role,
-      kelas: role === "student" ? kelas : "",
-      photoURL: "",
-      createdAt: serverTimestamp()
-    });
-
-    // Sign out dulu setelah register — cegah onAuthStateChanged terpicu
-    // sebelum data Firestore benar-benar tersimpan
-    const { signOut } = window._fb;
-    await signOut(auth);
-
-    alert("Register berhasil! Silakan login dengan akun baru Anda.");
-    switchForm();
-    document.getElementById("loginUser").value = email;
-    document.getElementById("loginPass").value = "";
-  } catch (err) {
-    let msg = "Gagal mendaftar.";
-    if (err.code === "auth/email-already-in-use") msg = "Email sudah digunakan!";
-    else if (err.code === "auth/weak-password") msg = "Password minimal 6 karakter!";
-    else if (err.code === "auth/invalid-email") msg = "Format email tidak valid!";
-    alert(msg);
-  } finally {
-    btn.innerText = "Register";
-    btn.disabled = false;
-  }
-}
-
-// ================= LOGIN (Firebase) =================
-async function login(){
-  const loginUser = document.getElementById("loginUser").value.trim();
-  const loginPass = document.getElementById("loginPass").value;
-
-  if (!loginUser || !loginPass) {
-    alert("Masukkan email/username dan password!");
+  const exist = accounts.find(acc => acc.username === username || acc.email === email);
+  if(exist){
+    alert("Username atau email sudah digunakan!");
     return;
   }
 
-  const btn = document.querySelector("#loginForm button[type='button']");
-  btn.innerText = "Masuk...";
-  btn.disabled = true;
+  // Menyimpan properti kelas ke dalam object akun (jika guru, nilainya kosong "")
+  const user = { fullName, username, email, password, role, kelas: role === 'student' ? kelas : "" };
+  accounts.push(user);
+  localStorage.setItem("accounts", JSON.stringify(accounts));
 
-  try {
-    const { auth, db, signInWithEmailAndPassword, collection, query, getDoc, doc } = window._fb;
-    const { getDocs, where } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  alert("Register berhasil! Silakan login.");
+  switchForm();
 
-    let emailToUse = loginUser;
-
-    // Jika input bukan format email, cari email berdasarkan username
-    if (!loginUser.includes("@")) {
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("username", "==", loginUser));
-      const snap = await getDocs(q);
-      if (snap.empty) {
-        alert("Username tidak ditemukan!");
-        btn.innerText = "Login";
-        btn.disabled = false;
-        return;
-      }
-      emailToUse = snap.docs[0].data().email;
-    }
-
-    await signInWithEmailAndPassword(auth, emailToUse, loginPass);
-    // onAuthStateChanged di module script akan menangani tampilan dashboard
-
-  } catch (err) {
-    let msg = "Akun tidak ditemukan atau password salah!";
-    if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") msg = "Password salah!";
-    else if (err.code === "auth/user-not-found") msg = "Akun tidak ditemukan!";
-    else if (err.code === "auth/invalid-email") msg = "Format email tidak valid!";
-    else if (err.code === "auth/too-many-requests") msg = "Terlalu banyak percobaan login. Coba beberapa saat lagi.";
-    alert(msg);
-  } finally {
-    // Selalu reset button, baik sukses maupun gagal
-    btn.innerText = "Login";
-    btn.disabled = false;
-  }
+  document.getElementById("loginUser").value = username;
+  document.getElementById("loginPass").value = password;
 }
 
-// ================= LOGOUT (Firebase) =================
-async function logout(){
-  const { auth, signOut } = window._fb;
-  if (window._tasksUnsubscribe) window._tasksUnsubscribe();
-  if (window._checkedUnsubscribe) window._checkedUnsubscribe();
-  await signOut(auth);
+// ================= LOGIN =================
+function login(){
+  const loginUser = document.getElementById("loginUser").value.trim();
+  const loginPass = document.getElementById("loginPass").value;
+
+  const foundUser = accounts.find(acc =>
+    (acc.username === loginUser || acc.email === loginUser) && acc.password === loginPass
+  );
+
+  if(!foundUser){
+    alert("Akun tidak ditemukan atau password salah!");
+    return;
+  }
+
+  currentUser = foundUser;
+  initTeacherTasks();
+
+  document.getElementById("authBox").style.display = "none";
+  document.getElementById("authBottomNav").style.display = "none"; 
+  document.getElementById("dashboard").style.display = "block";
+  document.getElementById("bottomNav").style.display = "flex"; 
+
+  switchTab('profile');
+
+  document.getElementById("profileName").innerText = foundUser.fullName;
+  document.getElementById("profileUsername").innerText = foundUser.username;
+  document.getElementById("profileEmail").innerText = foundUser.email;
+
+  if(foundUser.role === "student"){
+    document.getElementById("studentPanel").style.display = "block";
+    document.getElementById("teacherPanel").style.display = "none";
+    document.getElementById("dashboardTitle").innerText = "Dashboard Siswa";
+    document.getElementById("profileRole").innerText = "Siswa";
+    
+    // Menampilkan baris kelas di halaman profil untuk siswa
+    const classRow = document.getElementById("classRow");
+    if(classRow) {
+      classRow.style.display = "block";
+      const profileClass = document.getElementById("profileClass");
+      if(profileClass) profileClass.innerText = foundUser.kelas || "-";
+    }
+    
+    const savedPhoto = localStorage.getItem("profileImage_student_" + foundUser.username);
+    document.getElementById("profileImage").src = savedPhoto ? savedPhoto : "https://via.placeholder.com/150";
+  } else {
+    document.getElementById("studentPanel").style.display = "none";
+    document.getElementById("teacherPanel").style.display = "block";
+    document.getElementById("dashboardTitle").innerText = "Dashboard Guru";
+    document.getElementById("profileRole").innerText = "Guru";
+    
+    // Menyembunyikan baris kelas di halaman profil jika pengguna adalah guru
+    if(document.getElementById("classRow")) {
+      document.getElementById("classRow").style.display = "none";
+    }
+
+    const savedPhoto = localStorage.getItem("profileImage_teacher_" + foundUser.username);
+    document.getElementById("profileImage").src = savedPhoto ? savedPhoto : "https://via.placeholder.com/150";
+  }
+  
+  loadTasks();
+}
+
+// ================= LOGOUT =================
+function logout(){
   currentUser = null;
   editId = null;
-  tasks = {};
-  checkedTasks = {};
   document.getElementById("dashboard").style.display = "none";
   document.getElementById("bottomNav").style.display = "none"; 
   document.getElementById("authBox").style.display = "block";
-  document.getElementById("authBottomNav").style.display = "flex";
+  document.getElementById("authBottomNav").style.display = "flex"; 
   document.getElementById("loginUser").value = "";
   document.getElementById("loginPass").value = "";
-  const loginBtn = document.querySelector("#loginForm button[type='button']");
-  if (loginBtn) { loginBtn.innerText = "Login"; loginBtn.disabled = false; }
   resetTeacherForm();
 }
 
-// ================= FOTO PROFILE (disimpan base64 di Firestore, bypass CORS Storage) =================
-document.getElementById("photoInput").addEventListener("change", async function(e){
+// ================= FOTO PROFILE =================
+document.getElementById("photoInput").addEventListener("change", function(e){
   const file = e.target.files[0];
-  if (!file || !currentUser) return;
-
-  // Kompres gambar sebelum simpan agar tidak terlalu besar
-  const compressImage = (file, maxWidth = 300, quality = 0.7) => new Promise((resolve) => {
+  if(file && currentUser){
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const scale = Math.min(1, maxWidth / img.width);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.src = ev.target.result;
+    reader.onload = function(event){
+      const imageData = event.target.result;
+      document.getElementById("profileImage").src = imageData;
+      
+      const storageKey = "profileImage_" + currentUser.role + "_" + currentUser.username;
+      localStorage.setItem(storageKey, imageData);
     };
     reader.readAsDataURL(file);
-  });
-
-  try {
-    document.getElementById("profileImage").src = "https://via.placeholder.com/150?text=Uploading...";
-    const compressedData = await compressImage(file);
-    document.getElementById("profileImage").src = compressedData;
-
-    const { db, doc, updateDoc } = window._fb;
-    // Simpan base64 langsung ke Firestore (menghindari CORS Firebase Storage)
-    await updateDoc(doc(db, "users", currentUser.uid), { photoURL: compressedData });
-    currentUser.photoURL = compressedData;
-  } catch(err) {
-    console.error("Gagal upload foto:", err);
-    // Tetap tampilkan foto lokal meski Firestore gagal
-    alert("Foto ditampilkan sementara, tapi gagal disimpan ke server. Periksa koneksi.");
   }
 });
 
-async function removePhoto() {
+function removePhoto() {
   if (currentUser) {
     document.getElementById("profileImage").src = "https://via.placeholder.com/150";
+    const storageKey = "profileImage_" + currentUser.role + "_" + currentUser.username;
+    localStorage.removeItem(storageKey);
     document.getElementById("photoInput").value = "";
-    try {
-      const { db, doc, updateDoc } = window._fb;
-      // Hapus photoURL dari Firestore (foto disimpan base64, bukan di Storage)
-      await updateDoc(doc(db, "users", currentUser.uid), { photoURL: "" });
-      currentUser.photoURL = "";
-    } catch(err) {
-      console.error("Gagal hapus foto:", err);
-      alert("Gagal menghapus foto dari server.");
-    }
   }
 }
 
@@ -1262,8 +1148,8 @@ function toggleSubject(id){
   taskContainer.style.display = (taskContainer.style.display === "block") ? "none" : "block";
 }
 
-// ================= VERIFIKASI PASSWORD TUGAS (Firebase) =================
-async function verifyTaskPassword(taskId, teacherUsername) {
+// ================= VERIFIKASI PASSWORD TUGAS =================
+function verifyTaskPassword(taskId, teacherUsername) {
   if (!currentUser || currentUser.role !== "student") return;
 
   const inputElem = document.getElementById(`pass-input-${taskId}`);
@@ -1286,39 +1172,27 @@ async function verifyTaskPassword(taskId, teacherUsername) {
 
   if (targetTask.currentPassword === enteredPassword) {
     const studentKey = currentUser.username;
-
-    try {
-      const { db, doc, getDoc, setDoc, updateDoc, serverTimestamp } = window._fb;
-
-      // Update checkedTasks di Firestore
-      const checkedRef = doc(db, "checkedTasks", studentKey);
-      const checkedDoc = await getDoc(checkedRef);
-      let currentList = [];
-      if (checkedDoc.exists()) {
-        currentList = checkedDoc.data().list || [];
-      }
-      if (!currentList.includes(taskId)) {
-        currentList.push(taskId);
-      }
-      await setDoc(checkedRef, { list: currentList, updatedAt: serverTimestamp() });
-
-      // Regenerate password tugas di Firestore
-      const newPassword = generateRandomPassword();
-      const taskRef = doc(db, "tasks", taskId);
-      await updateDoc(taskRef, { currentPassword: newPassword });
-
-      alert("🎉 Password Benar! Status tugas Anda berhasil diperbarui menjadi SELESAI.");
-    } catch(err) {
-      console.error("Gagal memperbarui tugas:", err);
-      alert("Terjadi kesalahan. Coba lagi.");
+    if (!checkedTasks[studentKey]) {
+      checkedTasks[studentKey] = [];
     }
+    
+    if (!checkedTasks[studentKey].includes(taskId)) {
+      checkedTasks[studentKey].push(taskId);
+    }
+    localStorage.setItem("checkedTasks", JSON.stringify(checkedTasks));
+
+    targetTask.currentPassword = generateRandomPassword();
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+
+    alert("🎉 Password Benar! Status tugas Anda berhasil diperbarui menjadi SELESAI.");
+    loadTasks();
   } else {
     alert("❌ Password salah atau sudah kedaluwarsa! Tanyakan password baru ke guru Anda.");
   }
 }
 
-// ================= TAMBAH & EDIT TUGAS GURU (Firebase) =================
-async function addTask(){
+// ================= TAMBAH & EDIT TUGAS GURU =================
+function addTask(){
   if(!currentUser){
     alert("Silakan login dulu!");
     return;
@@ -1326,51 +1200,38 @@ async function addTask(){
 
   initTeacherTasks();
 
+  const targetClass = document.getElementById("taskClassSelect").value;
   const subject = document.getElementById("subjectSelect").value;
   const taskText = document.getElementById("taskInput").value;
   const deadline = document.getElementById("deadlineInput").value;
-  const targetClass = document.getElementById("teacherClassSelect").value;
 
   if(!targetClass || !subject || !taskText || !deadline){
-    alert("Isi semua data tugas terlebih dahulu, termasuk pilihan kelas!");
+    alert("Isi semua data tugas dan pilih target kelas terlebih dahulu!");
     return;
   }
 
   const teacherKey = currentUser.username;
-  const btn = document.querySelector(".teacher-form button");
-  btn.disabled = true;
-  const origText = btn.innerText;
-  btn.innerText = "Menyimpan...";
 
-  try {
-    const { db, doc, setDoc, updateDoc, serverTimestamp } = window._fb;
-
-    if(editId !== null){
-      // Update tugas yang ada
-      await updateDoc(doc(db, "tasks", editId), { subject, task: taskText, deadline, targetClass });
-      editId = null;
-    } else {
-      // Buat tugas baru — gunakan ID unik Firebase-style
-      const newId = `${teacherKey}_${Date.now()}`;
-      await setDoc(doc(db, "tasks", newId), {
-        subject,
-        task: taskText,
-        deadline,
-        targetClass,
-        teacher: teacherKey,
-        currentPassword: generateRandomPassword(),
-        createdAt: serverTimestamp()
-      });
-    }
-
-    resetTeacherForm();
-  } catch(err) {
-    console.error("Gagal menyimpan tugas:", err);
-    alert("Gagal menyimpan tugas. Coba lagi.");
-  } finally {
-    btn.disabled = false;
-    btn.innerText = origText;
+  if(editId !== null){
+    tasks[teacherKey] = tasks[teacherKey].map(t =>
+      t.id === editId ? { ...t, targetClass, subject, task: taskText, deadline } : t
+    );
+    editId = null;
+  } else {
+    tasks[teacherKey].push({
+      id: Date.now(),
+      targetClass,
+      subject,
+      task: taskText,
+      deadline,
+      teacher: teacherKey,
+      currentPassword: generateRandomPassword()
+    });
   }
+
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  resetTeacherForm();
+  loadTasks();
 }
 
 // ================= RENDER LIST TUGAS =================
@@ -1404,95 +1265,88 @@ function loadTasks(){
   const userCheckedList = checkedTasks[studentKey] || [];
 
   allTasks.forEach(data => {
-    // ── GURU: tampilkan tugas milik sendiri ──
-    if(currentUser.role === "teacher") {
-      if(data.teacher !== currentUser.username) return; // hanya tugas sendiri
+    if(currentUser.role === "teacher" && data.teacher === currentUser.username){
       const card = document.createElement("div");
       card.className = "teacher-card";
       card.innerHTML = `
-        <h3>📚 ${data.subject}</h3>
-        <p>📝 ${data.task}</p>
-        <small>🏫 Kelas: ${data.targetClass || '-'}</small><br>
+        <h3>📚 ${data.subject} <span style="font-size: 13px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; margin-left: 5px;">Kelas: ${data.targetClass || '-'}</span></h3>
+        <p style="white-space: pre-wrap;">📝 ${data.task}</p>
         <small>📅 Deadline: ${data.deadline}</small><br>
         <div style="margin-top: 5px;">
           <small style="color: #60a5fa;">🔑 Token Akses Murid Saat Ini:</small><br>
           <span class="password-badge">${data.currentPassword || 'TITIK-KOSONG'}</span>
         </div>
         <div style="margin-top:12px; display:flex; gap:10px;">
-          <button onclick="startEdit('${data.id}')" style="background:#facc15; color:black; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
+          <button onclick="startEdit(${data.id})" style="background:#facc15; color:black; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
             <i class="ri-edit-line"></i> Edit
           </button>
-          <button onclick="deleteTask('${data.id}')" style="background:#ef4444; color:white; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
+          <button onclick="deleteTask(${data.id})" style="background:#ef4444; color:white; padding:6px 14px; border:none; border-radius:8px; width:auto; margin:0; cursor:pointer; font-size:13px;">
             <i class="ri-delete-bin-line"></i> Hapus
           </button>
         </div>
       `;
       if(teacherList) teacherList.appendChild(card);
-      return; // selesai untuk iterasi ini
     }
 
-    // ── SISWA: tampilkan tugas sesuai kelas ──
-    if(currentUser.role !== "student") return;
-    // Filter: hanya tampilkan tugas yang targetClass sesuai kelas siswa
-    if(data.targetClass && data.targetClass !== currentUser.kelas) return;
-    const isCompleted = userCheckedList.includes(data.id);
-    const studentTaskCard = document.createElement("div");
-    studentTaskCard.className = `glass-card student-task-item ${isCompleted ? 'completed' : ''}`;
-    studentTaskCard.id = `student-task-${data.id}`;
-    
-    let validationSectionHtml = "";
-    if (!isCompleted) {
-      validationSectionHtml = `
-        <div class="password-verif-box">
-          <input type="text" id="pass-input-${data.id}" placeholder="Kode Guru..." maxlength="6">
-          <button onclick="verifyTaskPassword('${data.id}', '${data.teacher}')">Centang</button>
+    // ================= SISI VIEW MURID (DENGAN FILTER KELAS) =================
+    if (currentUser.role === "student" && data.targetClass === currentUser.kelas) {
+      
+      const isCompleted = userCheckedList.includes(data.id);
+      const studentTaskCard = document.createElement("div");
+      studentTaskCard.className = `glass-card student-task-item ${isCompleted ? 'completed' : ''}`;
+      studentTaskCard.id = `student-task-${data.id}`;
+      
+      let validationSectionHtml = "";
+      if (!isCompleted) {
+        validationSectionHtml = `
+          <div class="password-verif-box">
+            <input type="text" id="pass-input-${data.id}" placeholder="Kode Guru..." maxlength="6">
+            <button onclick="verifyTaskPassword(${data.id}, '${data.teacher}')">Centang</button>
+          </div>
+        `;
+      } else {
+        validationSectionHtml = `
+          <div style="margin-top:5px; color:#4ade80; font-size:12px; font-weight:600;">
+            <i class="ri-checkbox-circle-fill"></i> Selesai Terverifikasi (Terkunci)
+          </div>
+        `;
+      }
+
+      studentTaskCard.innerHTML = `
+        <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''} disabled style="cursor: not-allowed;">
+        <div class="task-text-content">
+          <h4>📝 ${data.task}</h4>
+          <p style="font-size:13px; opacity:0.8;">Mapel: ${data.subject}</p>
+          <small>📅 Deadline: ${data.deadline}</small>
+          ${validationSectionHtml}
         </div>
       `;
-    } else {
-      validationSectionHtml = `
-        <div style="margin-top:5px; color:#4ade80; font-size:12px; font-weight:600;">
-          <i class="ri-checkbox-circle-fill"></i> Selesai Terverifikasi (Terkunci)
-        </div>
-      `;
+
+      if(data.subject === "Matematika" && mathBox){
+        mathBox.appendChild(studentTaskCard);
+      } else if(data.subject === "IPA" && scienceBox){
+        scienceBox.appendChild(studentTaskCard);
+      } else if(data.subject === "Bahasa Indonesia" && indoBox){
+        indoBox.appendChild(studentTaskCard);
+      } else if(data.subject === "Bahasa Inggris" && englishBox){
+        englishBox.appendChild(studentTaskCard);
+      } else if(data.subject === "Sejarah" && historyBox){
+        historyBox.appendChild(studentTaskCard);
+      }
     }
+  }); // <-- PERBAIKAN 1: Menutup perulangan allTasks.forEach dengan benar di sini
 
-    studentTaskCard.innerHTML = `
-      <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''} disabled style="cursor: not-allowed;">
-      <div class="task-text-content">
-        <h4>📝 ${data.task}</h4>
-        <p style="font-size:13px; opacity:0.8;">Mapel: ${data.subject}</p>
-        <small>📅 Deadline: ${data.deadline}</small>
-        ${validationSectionHtml}
-      </div>
-    `;
-
-    if(data.subject === "Matematika" && mathBox){
-      mathBox.appendChild(studentTaskCard);
-    } else if(data.subject === "IPA" && scienceBox){
-      scienceBox.appendChild(studentTaskCard);
-    } else if(data.subject === "Bahasa Indonesia" && indoBox){
-      indoBox.appendChild(studentTaskCard);
-    } else if(data.subject === "Bahasa Inggris" && englishBox){
-      englishBox.appendChild(studentTaskCard);
-    } else if(data.subject === "Sejarah" && historyBox){
-      historyBox.appendChild(studentTaskCard);
-    }
-  });
-
-  updateChart();
+  updateChart(); // <-- PERBAIKAN 2: updateChart dipanggil SEKALI SAJA setelah semua tugas selesai dimuat
 }
 
-// ================= HAPUS TUGAS GURU (Firebase) =================
-async function deleteTask(id){
+// ================= HAPUS TUGAS GURU =================
+function deleteTask(id){
   if(!currentUser) return;
   if(confirm("Apakah Anda yakin ingin menghapus tugas ini?")){
-    try {
-      const { db, doc, deleteDoc } = window._fb;
-      await deleteDoc(doc(db, "tasks", id));
-    } catch(err) {
-      console.error("Gagal menghapus tugas:", err);
-      alert("Gagal menghapus tugas. Coba lagi.");
-    }
+    const teacherKey = currentUser.username;
+    tasks[teacherKey] = (tasks[teacherKey] || []).filter(t => t.id !== id);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    loadTasks();
   }
 }
 
@@ -1506,13 +1360,13 @@ function startEdit(id){
 
   editId = id;
   
+  if(document.getElementById("taskClassSelect")) document.getElementById("taskClassSelect").value = task.targetClass || "";
   document.getElementById("subjectSelect").value = task.subject;
   document.getElementById("taskInput").value = task.task;
   document.getElementById("deadlineInput").value = task.deadline;
-  if(task.targetClass) document.getElementById("teacherClassSelect").value = task.targetClass;
   
   const formTitle = document.querySelector(".teacher-form h3");
-  const actionBtn = document.getElementById("teacherActionBtn");
+  const actionBtn = document.querySelector(".teacher-form button");
   
   if(formTitle) formTitle.innerHTML = `<span style="color: #facc15;"><i class="ri-edit-box-line"></i> Mode Edit: Mengubah Tugas</span>`;
   if(actionBtn) {
@@ -1539,18 +1393,18 @@ function startEdit(id){
 function resetTeacherForm(){
   editId = null;
   
+  const classSelect = document.getElementById("taskClassSelect");
   const subjectSelect = document.getElementById("subjectSelect");
   const taskInput = document.getElementById("taskInput");
   const deadlineInput = document.getElementById("deadlineInput");
-  const teacherClassSelect = document.getElementById("teacherClassSelect");
 
+  if(classSelect) classSelect.value = "";
   if(subjectSelect) subjectSelect.value = "";
   if(taskInput) taskInput.value = "";
   if(deadlineInput) deadlineInput.value = "";
-  if(teacherClassSelect) teacherClassSelect.value = "";
   
   const formTitle = document.querySelector(".teacher-form h3");
-  const actionBtn = document.getElementById("teacherActionBtn");
+  const actionBtn = document.querySelector(".teacher-form button");
   
   if(formTitle) formTitle.innerHTML = "➕ Tambah Tugas";
   if(actionBtn) {
@@ -1563,6 +1417,7 @@ function resetTeacherForm(){
   if(cancelBtn) cancelBtn.remove();
 }
 
+// ================= UPDATE GRAFIK BATANG =================
 // ================= UPDATE GRAFIK BATANG =================
 function updateChart(){
   const dates = {
@@ -1580,6 +1435,14 @@ function updateChart(){
   Object.keys(tasks).forEach(teacher => {
     if(Array.isArray(tasks[teacher])){
       tasks[teacher].forEach(t => {
+        
+        // ================= FILTER KELAS UNTUK GRAFIK =================
+        // Jika yang login adalah murid, grafik HANYA menghitung tugas yang kelasnya cocok
+        if (currentUser && currentUser.role === "student" && t.targetClass !== currentUser.kelas) {
+          return; // Lewati tugas yang bukan kelasnya murid ini
+        }
+        // =============================================================
+
         if(dates[t.deadline] !== undefined && !userCheckedList.includes(t.id)){
           dates[t.deadline]++;
         }
@@ -1587,11 +1450,39 @@ function updateChart(){
     }
   });
 
-  const bars = document.querySelectorAll(".bar");
-  Object.values(dates).forEach((total, i) => {
-    if(!bars[i]) return;
-    bars[i].style.height = (total * 35) + "px";
-    bars[i].querySelector("span").innerText = total;
+  const maxTasks = Math.max(...Object.values(dates), 1);
+
+  Object.keys(dates).forEach(date => {
+    let barClass = "";
+    if(date === "25 Mei 2026" || date === "30 Mei 2026") barClass = "math";
+    else if(date === "26 Mei 2026") barClass = "ipa";
+    else if(date === "27 Mei 2026") barClass = "indo";
+    else if(date === "28 Mei 2026") barClass = "inggris";
+    else if(date === "29 Mei 2026") barClass = "sejarah";
+
+    const barBox = Array.from(document.querySelectorAll(".bar-box")).find(box => {
+      const p = box.querySelector("p");
+      return p && p.innerText === date.replace(" 2026", "");
+    });
+
+    if(box => box){
+      const barBoxEl = barBox;
+      if(barBoxEl){
+        const barContainer = barBoxEl.querySelector(".bar") || document.createElement("div");
+        barContainer.className = `bar ${barClass}`;
+        
+        const count = dates[date];
+        const heightPercent = (count / maxTasks) * 180;
+        barContainer.style.height = `${heightPercent}px`;
+        
+        barContainer.innerHTML = `<span>${count}</span>`;
+        
+        const existingBar = barBoxEl.querySelector(".bar");
+        if(!existingBar){
+          barBoxEl.insertBefore(barContainer, barBoxEl.querySelector("p"));
+        }
+      }
+    }
   });
 }
 </script>
