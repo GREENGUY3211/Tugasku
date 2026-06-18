@@ -757,7 +757,8 @@ button:hover{
         <div id="historyTask" class="task-container"></div>
       </div>
 
-      <div class="teacher-form">
+      <div id="teacherPanel" class="teacher-panel">
+        <div class="teacher-form">
           <h3>➕ Tambah Tugas</h3>
           
           <select id="taskClassSelect" class="teacher-input" required>
@@ -777,13 +778,13 @@ button:hover{
           </select>
 
           <select id="subjectSelect" class="teacher-input">
-              <option value="" disabled selected>Pilih Mata Pelajaran</option>
-              <option value="Matematika Umum">📘 Matematika Umum</option>
-              <option value="Olahraga">⚽ Olahraga</option>
-              <option value="Bahasa Indonesia">📖 Bahasa Indonesia</option>
-              <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
-              <option value="Sejarah">🏛️ Sejarah</option>
-            </select>
+            <option value="" disabled selected>Pilih Mata Pelajaran</option>
+            <option value="Matematika Umum">📘 Matematika Umum</option>
+            <option value="Olahraga">⚽ Olahraga</option>
+            <option value="Bahasa Indonesia">📖 Bahasa Indonesia</option>
+            <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
+            <option value="Sejarah">🏛️ Sejarah</option>
+          </select>
 
           <textarea id="taskInput" class="teacher-input" placeholder="Deskripsi Tugas" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
 
@@ -803,7 +804,9 @@ button:hover{
         <h3 style="margin-top: 25px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px;">📋 Daftar Tugas Anda & Password Aktif</h3>
         <div id="teacherTaskList"></div>
       </div>
+
     </div>
+  </div>
 </div>
 
 <div class="auth-bottom-nav" id="authBottomNav">
@@ -1389,6 +1392,7 @@ function resetTeacherForm(){
 }
 
 // ================= UPDATE GRAFIK BATANG =================
+// ================= UPDATE GRAFIK BATANG (PERBAIKAN) =================
 function updateChart(){
   const dates = {
     "19 Juni 2026": 0,
@@ -1403,12 +1407,15 @@ function updateChart(){
   const studentKey = currentUser ? currentUser.username : "";
   const userCheckedList = (currentUser && currentUser.role === "student") ? (checkedTasks[studentKey] || []) : [];
 
+  // 1. Hitung jumlah sisa tugas aktif berdasarkan deadline
   Object.keys(tasks).forEach(teacher => {
     if(Array.isArray(tasks[teacher])){
       tasks[teacher].forEach(t => {
+        // Jika user adalah murid, filter hanya tugas yang ditujukan untuk kelasnya
         if (currentUser && currentUser.role === "student" && t.targetClass !== currentUser.kelas) {
           return; 
         }
+        // Hanya hitung tugas yang belum diselesaikan/dicentang oleh murid
         if(dates[t.deadline] !== undefined && !userCheckedList.includes(t.id)){
           dates[t.deadline]++;
         }
@@ -1416,8 +1423,10 @@ function updateChart(){
     }
   });
 
+  // Cari nilai maksimum tugas untuk penentuan skala tinggi grafik (minimal skala 1)
   const maxTasks = Math.max(...Object.values(dates), 1);
 
+  // 2. Update tampilan grafik batang di HTML
   Object.keys(dates).forEach(date => {
     let barClass = "";
     if(date === "19 Juni 2026" || date === "12 Juli 2026") barClass = "math";
@@ -1426,26 +1435,33 @@ function updateChart(){
     else if(date === "30 Juni 2026") barClass = "inggris";
     else if(date === "05 Juli 2026") barClass = "sejarah";
 
-    let shortDateForm = date.replace(" Juni ", " Jun ").replace(" Juli ", " Jul ");
+    // Ubah "19 Juni 2026" menjadi "19 Jun" agar cocok dengan teks di dalam <p> HTML
+    let shortDateForm = date.replace(" Juni ", " Jun ").replace(" Juli ", " Jul ").replace(" 2026", "").trim();
 
+    // Temukan box batang yang memiliki teks tanggal yang sesuai
     const barBox = Array.from(document.querySelectorAll(".bar-box")).find(box => {
       const p = box.querySelector("p");
-      return p && p.innerText === shortDateForm.replace(" 2026", "").trim();
+      return p && p.innerText.trim() === shortDateForm;
     });
     
     if(barBox){ 
-      const barContainer = barBox.querySelector(".bar") || document.createElement("div");
+      let barContainer = barBox.querySelector(".bar");
+      
+      // Jika elemen .bar belum ada, buat baru (fall-back)
+      if(!barContainer) {
+        barContainer = document.createElement("div");
+        barBox.insertBefore(barContainer, barBox.querySelector("p"));
+      }
+      
       barContainer.className = `bar ${barClass}`;
       
       const count = dates[date];
+      // Hitung tinggi dalam pixel (maksimal tinggi box chart adalah sekitar 180px)
       const heightPercent = (count / maxTasks) * 180;
-      barContainer.style.height = `${heightPercent}px`;
       
+      // Berikan batas minimum 15px jika ada tugas agar teks angka "0" tidak bertumpukan saat tinggi 0px
+      barContainer.style.height = count > 0 ? `${heightPercent}px` : `0px`;
       barContainer.innerHTML = `<span>${count}</span>`;
-      
-      if(!barBox.querySelector(".bar")){
-        barBox.insertBefore(barContainer, barBox.querySelector("p"));
-      }
     }
   });
 }
