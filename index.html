@@ -731,21 +731,22 @@ button:hover{
         <div class="glass-card performance-card">
           <h3>📊 Statistik Sisa Tugas Aktif</h3>
           <div class="chart-container">
-            <div class="bar-box"><div class="bar math" style="height:0px;"><span>0</span></div><p>25 Mei</p></div>
-            <div class="bar-box"><div class="bar ipa" style="height:0px;"><span>0</span></div><p>26 Mei</p></div>
-            <div class="bar-box"><div class="bar indo" style="height:0px;"><span>0</span></div><p>27 Mei</p></div>
-            <div class="bar-box"><div class="bar inggris" style="height:0px;"><span>0</span></div><p>28 Mei</p></div>
-            <div class="bar-box"><div class="bar sejarah" style="height:0px;"><span>0</span></div><p>29 Mei</p></div>
-            <div class="bar-box"><div class="bar math" style="height:0px;"><span>0</span></div><p>30 Mei</p></div>
+            <div class="bar-box"><div class="bar math" style="height:0px;"><span>0</span></div><p>19 Jun</p></div>
+            <div class="bar-box"><div class="bar ipa" style="height:0px;"><span>0</span></div><p>20 Jun</p></div>
+            <div class="bar-box"><div class="bar indo" style="height:0px;"><span>0</span></div><p>25 Jun</p></div>
+            <div class="bar-box"><div class="bar inggris" style="height:0px;"><span>0</span></div><p>30 Jun</p></div>
+            <div class="bar-box"><div class="bar sejarah" style="height:0px;"><span>0</span></div><p>05 Jul</p></div>
+            <div class="bar-box"><div class="bar math" style="height:0px;"><span>0</span></div><p>12 Jul</p></div>
+            <div class="bar-box"><div class="bar ipa" style="height:0px;"><span>0</span></div><p>19 Jul</p></div>
           </div>
         </div>
 
-        <div class="class-card" onclick="toggleSubject('mathTask')"><h3>📘 Matematika</h3><p>Klik untuk melihat tugas</p></div>
+        <div class="class-card" onclick="toggleSubject('mathTask')"><h3>📘 Matematika Umum</h3><p>Klik untuk melihat tugas</p></div>
         <div id="mathTask" class="task-container"></div>
-
-        <div class="class-card" onclick="toggleSubject('scienceTask')"><h3>🧪 IPA</h3><p>Klik untuk melihat tugas</p></div>
-        <div id="scienceTask" class="task-container"></div>
-
+        
+        <div class="class-card" onclick="toggleSubject('sportsTask')"><h3>⚽ Olahraga</h3><p>Klik untuk melihat tugas</p></div>
+        <div id="sportsTask" class="task-container"></div>
+        
         <div class="class-card" onclick="toggleSubject('indoTask')"><h3>📖 Bahasa Indonesia</h3><p>Klik untuk melihat tugas</p></div>
         <div id="indoTask" class="task-container"></div>
         
@@ -756,78 +757,53 @@ button:hover{
         <div id="historyTask" class="task-container"></div>
       </div>
 
-      <div id="teacherPanel" class="teacher-panel">
-        <h2 style="margin-top:15px;">👩‍🏫 Manajemen Tugas</h2>
-        <div class="teacher-form">
+      <div class="teacher-form">
           <h3>➕ Tambah Tugas</h3>
+          
+          <select id="taskClassSelect" class="teacher-input" required>
+            <option value="" disabled selected>Pilih Target Kelas</option>
+            <option value="X-1">Kelas X-1</option>
+            <option value="X-2">Kelas X-2</option>
+            <option value="X-3">Kelas X-3</option>
+            <option value="X-4">Kelas X-4</option>
+            <option value="XI-1">Kelas XI-1</option>
+            <option value="XI-2">Kelas XI-2</option>
+            <option value="XI-3">Kelas XI-3</option>
+            <option value="XI-4">Kelas XI-4</option>
+            <option value="XII-1">Kelas XII-1</option>
+            <option value="XII-2">Kelas XII-2</option>
+            <option value="XII-3">Kelas XII-3</option>
+            <option value="XII-4">Kelas XII-4</option>
+          </select>
+
           <select id="subjectSelect" class="teacher-input">
-            <option value="">Pilih Mata Pelajaran</option>
-            <option value="Matematika">📘 Matematika</option>
-            <option value="IPA">🧪 IPA</option>
-            <option value="Bahasa Indonesia">📖 Bahasa Indonesia</option>
-            <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
-            <option value="Sejarah">🏛️ Sejarah</option>
-          </select>
-          <div class="teacher-form">
-              <h3>➕ Tambah Tugas</h3>
-              <!-- Dropdown Pilihan Kelas Baru untuk Guru -->
-              <select id="taskClassSelect" class="teacher-input" required>
-                <option value="" disabled selected>Pilih Target Kelas</option>
-                <option value="X-1">Kelas X-1</option>
-                <option value="X-2">Kelas X-2</option>
-                <option value="X-3">Kelas X-3</option>
-                <option value="X-4">Kelas X-4</option>
-                <option value="XI-1">Kelas XI-1</option>
-                <option value="XI-2">Kelas XI-2</option>
-                <option value="XI-3">Kelas XI-3</option>
-                <option value="XI-4">Kelas XI-4</option>
-                <option value="XII-1">Kelas XII-1</option>
-                <option value="XII-2">Kelas XII-2</option>
-                <option value="XII-3">Kelas XII-3</option>
-                <option value="XII-4">Kelas XII-4</option>
-              </select>
-    
-              <select id="subjectSelect" class="teacher-input">
-                <option value="">Pilih Mata Pelajaran</option>
-                <option value="Matematika">📘 Matematika</option>
-                <option value="IPA">🧪 IPA</option>
-                <option value="Bahasa Indonesia">📖 Bahasa Indonesia</option>
-                <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
-                <option value="Sejarah">🏛️ Sejarah</option>
-              </select>
-    
-              <!-- Mengubah dari input text menjadi textarea (Deskripsi Tugas) -->
-              <textarea id="taskInput" class="teacher-input" placeholder="Deskripsi Tugas" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
-    
-              <select id="deadlineInput" class="teacher-input">
-                <option value="">Pilih Deadline Mei 2026</option>
-                <option>25 Mei 2026</option>
-                <option>26 Mei 2026</option>
-                <option>27 Mei 2026</option>
-                <option>28 Mei 2026</option>
-                <option>29 Mei 2026</option>
-                <option>30 Mei 2026</option>
-              </select>
-              <button onclick="addTask()">Tambahkan Tugas</button>
-            </div>
+              <option value="" disabled selected>Pilih Mata Pelajaran</option>
+              <option value="Matematika Umum">📘 Matematika Umum</option>
+              <option value="Olahraga">⚽ Olahraga</option>
+              <option value="Bahasa Indonesia">📖 Bahasa Indonesia</option>
+              <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
+              <option value="Sejarah">🏛️ Sejarah</option>
+            </select>
+
+          <textarea id="taskInput" class="teacher-input" placeholder="Deskripsi Tugas" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
+
           <select id="deadlineInput" class="teacher-input">
-            <option value="">Pilih Deadline Mei 2026</option>
-            <option>25 Mei 2026</option>
-            <option>26 Mei 2026</option>
-            <option>27 Mei 2026</option>
-            <option>28 Mei 2026</option>
-            <option>29 Mei 2026</option>
-            <option>30 Mei 2026</option>
+            <option value="" disabled selected>Pilih Tanggal Kumpul</option>
+            <option>19 Juni 2026</option>
+            <option>20 Juni 2026</option>
+            <option>25 Juni 2026</option>
+            <option>30 Juni 2026</option>
+            <option>05 Juli 2026</option>
+            <option>12 Juli 2026</option>
+            <option>19 Juli 2026</option>
           </select>
+          
           <button onclick="addTask()">Tambahkan Tugas</button>
         </div>
         <h3 style="margin-top: 25px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px;">📋 Daftar Tugas Anda & Password Aktif</h3>
         <div id="teacherTaskList"></div>
       </div>
-
     </div>
-
-  </div>
 </div>
 
 <div class="auth-bottom-nav" id="authBottomNav">
@@ -1240,14 +1216,14 @@ function loadTasks(){
 
   const teacherList = document.getElementById("teacherTaskList");
   const mathBox = document.getElementById("mathTask");
-  const scienceBox = document.getElementById("scienceTask");
+  const sportsBox = document.getElementById("sportsTask"); // Sesuai mapel Olahraga
   const indoBox = document.getElementById("indoTask");
   const englishBox = document.getElementById("englishTask");
   const historyBox = document.getElementById("historyTask");
 
   if(teacherList) teacherList.innerHTML = "";
   if(mathBox) mathBox.innerHTML = "";
-  if(scienceBox) scienceBox.innerHTML = "";
+  if(sportsBox) sportsBox.innerHTML = ""; // PERBAIKAN: Sebelumnya tertulis scienceBox (menyebabkan error)
   if(indoBox) indoBox.innerHTML = "";
   if(englishBox) englishBox.innerHTML = "";
   if(historyBox) historyBox.innerHTML = "";
@@ -1322,10 +1298,11 @@ function loadTasks(){
         </div>
       `;
 
-      if(data.subject === "Matematika" && mathBox){
+      // Menyesuaikan penempatan kartu tugas berdasarkan nama mapel baru
+      if(data.subject === "Matematika Umum" && mathBox){
         mathBox.appendChild(studentTaskCard);
-      } else if(data.subject === "IPA" && scienceBox){
-        scienceBox.appendChild(studentTaskCard);
+      } else if(data.subject === "Olahraga" && sportsBox){ // PERBAIKAN: Menggunakan variabel sportsBox agar lebih bersih
+        sportsBox.appendChild(studentTaskCard);
       } else if(data.subject === "Bahasa Indonesia" && indoBox){
         indoBox.appendChild(studentTaskCard);
       } else if(data.subject === "Bahasa Inggris" && englishBox){
@@ -1334,9 +1311,9 @@ function loadTasks(){
         historyBox.appendChild(studentTaskCard);
       }
     }
-  }); // <-- PERBAIKAN 1: Menutup perulangan allTasks.forEach dengan benar di sini
+  });
 
-  updateChart(); // <-- PERBAIKAN 2: updateChart dipanggil SEKALI SAJA setelah semua tugas selesai dimuat
+  updateChart(); 
 }
 
 // ================= HAPUS TUGAS GURU =================
@@ -1418,16 +1395,66 @@ function resetTeacherForm(){
 }
 
 // ================= UPDATE GRAFIK BATANG =================
-// ================= UPDATE GRAFIK BATANG =================
 function updateChart(){
   const dates = {
-    "25 Mei 2026": 0,
-    "26 Mei 2026": 0,
-    "27 Mei 2026": 0,
-    "28 Mei 2026": 0,
-    "29 Mei 2026": 0,
-    "30 Mei 2026": 0
+    "19 Juni 2026": 0,
+    "20 Juni 2026": 0,
+    "25 Juni 2026": 0,
+    "30 Juni 2026": 0,
+    "05 Juli 2026": 0,
+    "12 Juli 2026": 0,
+    "19 Juli 2026": 0
   };
+
+  const studentKey = currentUser ? currentUser.username : "";
+  const userCheckedList = (currentUser && currentUser.role === "student") ? (checkedTasks[studentKey] || []) : [];
+
+  Object.keys(tasks).forEach(teacher => {
+    if(Array.isArray(tasks[teacher])){
+      tasks[teacher].forEach(t => {
+        if (currentUser && currentUser.role === "student" && t.targetClass !== currentUser.kelas) {
+          return; 
+        }
+        if(dates[t.deadline] !== undefined && !userCheckedList.includes(t.id)){
+          dates[t.deadline]++;
+        }
+      });
+    }
+  });
+
+  const maxTasks = Math.max(...Object.values(dates), 1);
+
+  Object.keys(dates).forEach(date => {
+    let barClass = "";
+    if(date === "19 Juni 2026" || date === "12 Juli 2026") barClass = "math";
+    else if(date === "20 Juni 2026" || date === "19 Juli 2026") barClass = "ipa";
+    else if(date === "25 Juni 2026") barClass = "indo";
+    else if(date === "30 Juni 2026") barClass = "inggris";
+    else if(date === "05 Juli 2026") barClass = "sejarah";
+
+    let shortDateForm = date.replace(" Juni ", " Jun").replace(" Juli ", " Jul");
+
+    const barBox = Array.from(document.querySelectorAll(".bar-box")).find(box => {
+      const p = box.querySelector("p");
+      return p && p.innerText === shortDateForm.replace(" 2026", "");
+    });
+
+    if(barBox){
+      const barContainer = barBox.querySelector(".bar") || document.createElement("div");
+      barContainer.className = `bar ${barClass}`;
+      
+      const count = dates[date];
+      const heightPercent = (count / maxTasks) * 180;
+      barContainer.style.height = `${heightPercent}px`;
+      
+      barContainer.innerHTML = `<span>${count}</span>`;
+      
+      if(!barBox.querySelector(".bar")){
+        barBox.insertBefore(barContainer, barBox.querySelector("p"));
+      }
+    }
+  });
+}
 
   const studentKey = currentUser ? currentUser.username : "";
   const userCheckedList = (currentUser && currentUser.role === "student") ? (checkedTasks[studentKey] || []) : [];
