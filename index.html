@@ -777,13 +777,13 @@ button:hover{
           </select>
 
           <select id="subjectSelect" class="teacher-input">
-              <option value="" disabled selected>Pilih Mata Pelajaran</option>
-              <option value="Matematika Umum">📘 Matematika Umum</option>
-              <option value="Olahraga">⚽ Olahraga</option>
-              <option value="Bahasa Indonesia">📖 Bahasa Indonesia</option>
-              <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
-              <option value="Sejarah">🏛️ Sejarah</option>
-            </select>
+            <option value="" disabled selected>Pilih Mata Pelajaran</option>
+            <option value="Matematika Umum">📘 Matematika Umum</option>
+            <option value="Olahraga">⚽ Olahraga</option>
+            <option value="Bahasa Indonesia">📖 Bahasa Indonesia</option>
+            <option value="Bahasa Inggris">🇬🇧 Bahasa Inggris</option>
+            <option value="Sejarah">🏛️ Sejarah</option>
+          </select>
 
           <textarea id="taskInput" class="teacher-input" placeholder="Deskripsi Tugas" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
 
@@ -1216,14 +1216,14 @@ function loadTasks(){
 
   const teacherList = document.getElementById("teacherTaskList");
   const mathBox = document.getElementById("mathTask");
-  const sportsBox = document.getElementById("sportsTask"); // Sesuai mapel Olahraga
+  const sportsBox = document.getElementById("sportsTask");
   const indoBox = document.getElementById("indoTask");
   const englishBox = document.getElementById("englishTask");
   const historyBox = document.getElementById("historyTask");
 
   if(teacherList) teacherList.innerHTML = "";
   if(mathBox) mathBox.innerHTML = "";
-  if(sportsBox) sportsBox.innerHTML = ""; // PERBAIKAN: Sebelumnya tertulis scienceBox (menyebabkan error)
+  if(sportsBox) sportsBox.innerHTML = "";
   if(indoBox) indoBox.innerHTML = "";
   if(englishBox) englishBox.innerHTML = "";
   if(historyBox) historyBox.innerHTML = "";
@@ -1264,9 +1264,7 @@ function loadTasks(){
       if(teacherList) teacherList.appendChild(card);
     }
 
-    // ================= SISI VIEW MURID (DENGAN FILTER KELAS) =================
     if (currentUser.role === "student" && data.targetClass === currentUser.kelas) {
-      
       const isCompleted = userCheckedList.includes(data.id);
       const studentTaskCard = document.createElement("div");
       studentTaskCard.className = `glass-card student-task-item ${isCompleted ? 'completed' : ''}`;
@@ -1298,10 +1296,9 @@ function loadTasks(){
         </div>
       `;
 
-      // Menyesuaikan penempatan kartu tugas berdasarkan nama mapel baru
       if(data.subject === "Matematika Umum" && mathBox){
         mathBox.appendChild(studentTaskCard);
-      } else if(data.subject === "Olahraga" && sportsBox){ // PERBAIKAN: Menggunakan variabel sportsBox agar lebih bersih
+      } else if(data.subject === "Olahraga" && sportsBox){
         sportsBox.appendChild(studentTaskCard);
       } else if(data.subject === "Bahasa Indonesia" && indoBox){
         indoBox.appendChild(studentTaskCard);
@@ -1315,7 +1312,6 @@ function loadTasks(){
 
   updateChart(); 
 }
-
 // ================= HAPUS TUGAS GURU =================
 function deleteTask(id){
   if(!currentUser) return;
@@ -1394,6 +1390,7 @@ function resetTeacherForm(){
   if(cancelBtn) cancelBtn.remove();
 }
 
+// ================= UPDATE GRAFIK BATANG =================
 // ================= UPDATE GRAFIK BATANG =================
 function updateChart(){
   const dates = {
